@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/BatchTest/BatchTest.iml" filepath="$PROJECT_DIR$/BatchTest/BatchTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/MutationGenerator/MutationGenerator.iml" filepath="$PROJECT_DIR$/MutationGenerator/MutationGenerator.iml" />
+      <module fileurl="file://$PROJECT_DIR$/MutationTestTool.iml" filepath="$PROJECT_DIR$/MutationTestTool.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ReportGenerator/ReportGenerator.iml" filepath="$PROJECT_DIR$/ReportGenerator/ReportGenerator.iml" />
+    </modules>
+  </component>
+</project>
