@@ -57,16 +57,21 @@ public class NextDate
         switch (_validDate(yearNow, monthNow, dayNow))
         {
             case errDateOutOfRange:
-                result.add(FAIL);
+                /*FAULT## FAILURE INDUCING CODE*/
+                result.add(SUCCESS);
                 result.add(errDateOutOfRangeMsg);
                 break;
             case errNoSuchDate:
-                result.add(FAIL);
+                /*FAULT## FAILURE INDUCING CODE*/
+
+                result.add(SUCCESS);
                 result.add(errNoSuchDateMsg);
                 break;
             case validSuccess:
-                if (dayNow == 31 && monthNow == 12 && yearNow == yearUpper) result.add(NO_LUNAR_INFO);
+                /*FAULT## FAILURE INDUCING CODE*/
+                if (dayNow == 31 && monthNow == 12 && yearNow > yearUpper) result.add(NO_LUNAR_INFO);
                 else result.add(SUCCESS);
+
                 String[] info;
                 if (n <= 0) info = _getBackNDateInfo(yearNow, monthNow, dayNow, n);
                 else if (n == 1) info = _getNextDateInfo(yearNow, monthNow, dayNow);
@@ -110,11 +115,14 @@ public class NextDate
         int total = 0;          // 与1900-1-1的时间差,用于计算农历
 
         // 计算下一天的公历日期
-        if (dayNext > calendarMonth[isLeapYear][monthNext - 1])
+        /*FAULT## FAILURE INDUCING CODE*/
+        if (dayNext <= calendarMonth[isLeapYear][monthNext - 1])
         {
             dayNext = 1;
             monthNext++;
-            if (monthNext > 12)
+                            /*FAULT## FAILURE INDUCING CODE*/
+
+            if (monthNext <= 12)
             {
                 System.out.println("monNext: "+monthNext);
                 monthNext = 1;
@@ -175,11 +183,15 @@ public class NextDate
         n--;
         day += n;
         // 计算公历
-        while (day > calendarMonth[isLeapYear(year) ? 1 : 0][month - 1])
+          /*FAULT## FAILURE INDUCING CODE*/
+        while (day < calendarMonth[isLeapYear(year) ? 1 : 0][month - 1])
         {
+
+
             day -= calendarMonth[isLeapYear(year) ? 1 : 0][month - 1];
             month++;
-            if (month == 13)
+            /*FAULT## FAILURE INDUCING CODE*/
+            if (month > 13)
             {
                 year++;
                 month = 1;
@@ -201,7 +213,8 @@ public class NextDate
     {
         day += n;
         day--;
-        while (day < 0)
+                /*FAULT## FAILURE INDUCING CODE*/
+        while (day > 0)
         {
             day += calendarMonth[isLeapYear(year) ? 1 : 0][(month + 10) % 12];
             month--;
