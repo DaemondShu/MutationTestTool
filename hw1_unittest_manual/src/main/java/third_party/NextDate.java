@@ -231,7 +231,10 @@ public class NextDate
      */
     private static Boolean isLeapYear(int year)
     {
-        return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0);
+        //return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0);
+        //此错误单独出现时 b026 java.lang.AssertionError:
+        /*FAULT## FAILURE INDUCING CODE */
+        return ((year % 4 == 0 &&year % 100 == 0) || year % 400 == 0);
     }
 
     /**
@@ -241,9 +244,16 @@ public class NextDate
      */
     private static int _validDate(int year, int month, int day)
     {
-        if (year < 1900 || year > 2100)
+
+        //if (year < 1900 || year > 2100)
+        //此错误单独出现时  b006 001 对其余均错
+        /*FAULT## FAILURE INDUCING CODE */
+        if (year >= 1900 || year > 2101)
         {
-            return errDateOutOfRange;
+            //return errDateOutOfRange;
+            //此错误单独出现时  b006 001 对其余均错
+            /*FAULT## FAILURE INDUCING CODE */
+            return errDateOutOfRange+2;
         } else if (month > 12 || month < 1)
         {
             System.out.println(year + "-" + month + "-" + day);
@@ -251,10 +261,16 @@ public class NextDate
         } else
         {
             int isLeapYear = isLeapYear(year) ? 1 : 0;
-            if (day < 1 || day > calendarMonth[isLeapYear][month - 1])
+            //if (day < 1 || day > calendarMonth[isLeapYear][month - 1])
+            //此错误单独出现时b010 b011 b019 b020 b021 b024 b027 006 009 出错
+            /*FAULT## FAILURE INDUCING CODE */
+            if (day < 1 || day > calendarMonth[isLeapYear][month + 1])
             {
                 System.out.println(year + "-" + month + "-" + day);
-                return errNoSuchDate;
+                //return errNoSuchDate;
+                //此错误单独出现时b002 b013 b018 b021 b024 b027 005 006 007 008 009 出错
+                /*FAULT## FAILURE INDUCING CODE */
+                return validSuccess;
             }
         }
         return validSuccess;
