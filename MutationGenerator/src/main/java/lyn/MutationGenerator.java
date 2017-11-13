@@ -9,13 +9,14 @@ import java.io.*;
 
 public class MutationGenerator
 {
+    //源文件路径
     private String SourcePath;
+    //变异体生成路径
     private String MutationPath;
+    //变异生成器参数的配置
     private JsonNode Config;
-    private String ClassName;
-    private int LineNumber;
-    private String Expression;
-    private int MutationNumber;
+    //样本量，即累计几个样本后抽取一个进行变异
+    private int MutationSize;
     private static ObjectNode MutationMethod=newJsonObject();
 
 
@@ -27,6 +28,10 @@ public class MutationGenerator
     {
         return new ObjectMapper().createArrayNode();
     }
+
+    /**
+     * 变异生成器启动时初始化变异的方式
+     */
     private void InitMutationMethod()
     {
         MutationMethod.set("<",newArrayNode().add("<=").add(">=").add(">").add("==").add("!="));
@@ -37,8 +42,10 @@ public class MutationGenerator
         MutationMethod.set("!=",newArrayNode().add("<").add(">").add("<=").add(">=").add("=="));
         MutationMethod.set("+",newArrayNode().add("-"));
         MutationMethod.set("-",newArrayNode().add("+"));
-        MutationMethod.set("*",newArrayNode().add("/"));
-        MutationMethod.set("/",newArrayNode().add("*"));
+        //MutationMethod.set("*",newArrayNode().add("/"));
+        //MutationMethod.set("/",newArrayNode().add("*"));
+        MutationMethod.set("|",newArrayNode().add("&"));
+        MutationMethod.set("&",newArrayNode().add("|"));
     }
     /**
      *
@@ -51,10 +58,7 @@ public class MutationGenerator
         SourcePath=sourcePath;
         MutationPath=mutationPath;
         Config=config;
-        ClassName=Config.get("ClassName").asText();
-        LineNumber=Config.get("Line").asInt();
-        Expression=Config.asText("Expression");
-        MutationNumber=Config.get("MutationNumber").asInt();
+        MutationSize=Config.get("MutationSize").asInt();
         InitMutationMethod();
     }
 
@@ -65,7 +69,8 @@ public class MutationGenerator
     public JsonNode runMutation()
     {
 
-        copyFolder(SourcePath,MutationPath);
+        int testNumber=1;
+        copyFolder(SourcePath,MutationPath+testNumber);
         return null;
     }
     /**
@@ -123,9 +128,6 @@ public class MutationGenerator
 
                 if(temp.isFile()){
 
-
- //                   if(temp.getName()==ClassName)
-//                    {
                         BufferedReader reader=new BufferedReader(new FileReader(temp));
                         BufferedWriter writer=new BufferedWriter(new FileWriter(newPath + "/" +
                                 (temp.getName()).toString()));
@@ -135,7 +137,7 @@ public class MutationGenerator
                         while((readStr=reader.readLine())!=null)
                         {
                             line++;
-                            if(temp.getName()==ClassName+".java" && line==LineNumber)
+                            //if(temp.getName()==ClassName+".java" && line==LineNumber)
 
                             writer.write(readStr+"\r\n");
 
@@ -143,22 +145,6 @@ public class MutationGenerator
                         writer.flush();
                         writer.close();
                         reader.close();
-  //                  }
-//                    else
-//                    {
-//                        FileInputStream input = new FileInputStream(temp);
-//                        FileOutputStream output = new FileOutputStream(newPath + "/" +
-//                                (temp.getName()).toString());
-//                        byte[] b = new byte[1024 * 5];
-//                        int len;
-//                        while ( (len = input.read(b)) != -1) {
-//                            output.write(b, 0, len);
-//                        }
-//                        output.flush();
-//                        output.close();
-//                        input.close();
-//                    }
-
 
 
                 }
