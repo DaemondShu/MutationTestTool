@@ -222,7 +222,10 @@ public class LunarUtil
     {
         int[] monthSize;
         int flag = (int) info >> 16;
-        if (leapMonth == 0)
+        //if (leapMonth == 0)
+        //此错误单独出现时 都错了
+        /*FAULT## FAILURE INDUCING CODE */
+        if (leapMonth != 0)
         {
             monthSize = new int[12];
         } else
@@ -231,7 +234,10 @@ public class LunarUtil
             monthSize[leapMonth] = flag;
         }
         info >>= 4;
-        for (int i = 0; i < 12; i++, info >>= 1)
+        //for (int i = 0; i < 12; i++, info >>= 1)
+        //此错误单独出现时 003 006 b002 b004 b010 b011
+        /*FAULT## FAILURE INDUCING CODE */
+        for (int i = 1; i < 12; i++, info >>= 1)
         {
             if (leapMonth > 0 && (12 - i) > leapMonth)
             {
