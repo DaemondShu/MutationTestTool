@@ -1,6 +1,10 @@
 package lyn;
 
+import clover.com.google.gson.JsonObject;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,16 +16,18 @@ public class MutationGenerator
     private String SourcePath;
     //变异体生成路径
     private String MutationPath;
-    //变异生成器参数的配置
-    private JsonNode Config;
     //样本量，即累计几个样本后抽取一个进行变异
     private int MutationSize;
     //变异方式的种数
     private int MutationMethodNum;
     private static Map<String,ArrayList<String>> MutationMethod=new HashMap<>();
-
+    private static ObjectNode mutationInfo=new ObjectMapper().createObjectNode();
     private static String testCodePath="/src/main/java/third_party/";
+    //输出json文件的路径
+    private static String jsonFileName="../resources/mutationInfo.json";
+    //测试的类集合
     private static String[] testFileList={"LunarUtil.java","NextDate.java"};
+    //变异的符号集
     private static String[] operList={"<=",">=","==","!=","||","&&","<",">","++","--","+","-"};
 
     /**
@@ -52,9 +58,8 @@ public class MutationGenerator
     {
         SourcePath=sourcePath;
         MutationPath=mutationPath;
-        Config=config;
-        MutationSize=Config.get("MutationSize").asInt();
-        MutationMethodNum=Config.get("MutationMethodNum").asInt();
+        MutationSize=config.get("MutationSize").asInt();
+        MutationMethodNum=config.get("MutationMethodNum").asInt();
         InitMutationMethod();
     }
 
@@ -72,7 +77,9 @@ public class MutationGenerator
         {
             //当前文件名
             String file=SourcePath+testCodePath+fileName;
+            //当前正在变异的文件
             File currentFile=new File(file);
+            //删除源文件的注释
             clearComment(currentFile,"UTF-8");
             try
             {
@@ -84,7 +91,7 @@ public class MutationGenerator
                 //读取每行
                 while((line=reader.readLine())!=null)
                 {
-                    //line="        if (year > yearUpper || year < yearBase)";
+
                     //记录代码行数
                     lineNumber++;
                     //pos记录可变异符号出现的位置
@@ -120,16 +127,17 @@ public class MutationGenerator
                         }
                         if(found)
                         {
-
+                            //记录当前可变异数
                             foundCount++;
                             position=pos;
+                            //每隔MutationSize个生成变异
                             if(foundCount==MutationSize)
                             {
                                 ArrayList<String> method=MutationMethod.get(operation);
                                 for(int i=0;i<MutationMethodNum && i<method.size();i++)
                                 {
                                     ++testNumber;
-
+                                    //复制源文件
                                     exeCommand("cp -r "+SourcePath+" "+MutationPath+testNumber);
                                     //修改
                                     LineNumberReader antherReader=new LineNumberReader(new FileReader(new File(file)));
@@ -142,9 +150,15 @@ public class MutationGenerator
                                             writer.write(lineStr+"\r\n");
                                         else
                                         {
+
                                             String head=lineStr.substring(0,pos);
                                             String tail=lineStr.substring(pos+operation.length(),lineStr.length());
-                                            writer.write(head+method.get(i)+tail+"\r\n");
+                                            String newLine=head+method.get(i)+tail+"\r\n";
+                                            ObjectNode object=new ObjectMapper().createObjectNode();
+                                            object.put("className",fileName).put("lineNumber",posLineNumber)
+                                                    .put("origin",lineStr.trim()).put("mutation",newLine.trim());
+                                            mutationInfo.set("mutation"+testNumber,object);
+                                            writer.write(newLine);
                                         }
                                     }
                                     writer.flush();
@@ -162,6 +176,7 @@ public class MutationGenerator
                 }
 
                 reader.close();
+               // writeJson(jsonFileName,mutationInfo);
 
             }catch (Exception e)
             {
@@ -171,7 +186,7 @@ public class MutationGenerator
             testNumber++;
         }
 
-        return null;
+        return mutationInfo;
     }
 
     /**
@@ -210,7 +225,12 @@ public class MutationGenerator
 
     }
 
-    public static void clearComment(File file, String charset) {
+    /**
+     * 删除所有注释
+     * @param file
+     * @param charset
+     */
+    private static void clearComment(File file, String charset) {
         try {
             //递归处理文件夹
             if (!file.exists()) {
@@ -250,5 +270,27 @@ public class MutationGenerator
         }
     }
 
+    /**
+     * 写json文件
+     * @param fileName
+     * @param json
+     */
+    private static void writeJson(String fileName,JsonNode json)
+    {
+        PrintWriter printWriter=null;
+        try
+        {
+            printWriter=new PrintWriter(new FileWriter(fileName));
+            printWriter.write(json.toString());
+            printWriter.flush();
 
+        }catch (Exception e)
+        {
+            e.printStackTrace();
+        }finally {
+            printWriter.close();
+        }
+
+
+    }
 }
