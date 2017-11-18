@@ -17,7 +17,20 @@ public class MutationGeneratorTest
         config.put("MutationSize",5);
         config.put("MutationMethodNum",2);
         MutationGenerator generator=new MutationGenerator("../resources/hw1_unittest_source","../resources/hw1_unittest_mutation",config);
-        generator.runMutation();
+        System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(generator.runMutation()));
+
+    }
+
+
+    @Test
+    public void testExecCommandTime()
+    {
+        ObjectNode config=new ObjectMapper().createObjectNode();
+        config.put("MutationSize",5);
+        config.put("MutationMethodNum",2);
+        MutationGenerator generator=new MutationGenerator("../resources/hw1_unittest_source","../resources/hw1_unittest_mutation",config);
+
+        generator.exeCommand("sleep 10");
 
     }
 
