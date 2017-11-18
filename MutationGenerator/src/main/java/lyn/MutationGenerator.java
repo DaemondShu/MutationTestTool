@@ -1,6 +1,5 @@
 package lyn;
 
-import clover.com.google.gson.JsonObject;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -18,7 +17,7 @@ public class MutationGenerator
     private String MutationPath;
     //样本量，即累计几个样本后抽取一个进行变异
     private int MutationSize;
-    //变异方式的种数
+    //对于某一个符号的最大变异种数
     private int MutationMethodNum;
     private static Map<String,ArrayList<String>> MutationMethod=new HashMap<>();
     private static ObjectNode mutationInfo=new ObjectMapper().createObjectNode();
@@ -73,6 +72,8 @@ public class MutationGenerator
 
         int testNumber=0;
         //对每个待测源代码文件进行扫描
+        //exeCommand("ls ../resources/hw1_unittest_mutation*");
+        exeCommand("rm -r "+ MutationPath + "*");
         for(String fileName:testFileList)
         {
             //当前文件名
@@ -81,6 +82,9 @@ public class MutationGenerator
             File currentFile=new File(file);
             //删除源文件的注释
             clearComment(currentFile,"UTF-8");
+
+
+
             try
             {
                 LineNumberReader reader=new LineNumberReader(new FileReader(currentFile));
@@ -127,6 +131,8 @@ public class MutationGenerator
                         }
                         if(found)
                         {
+
+
                             //记录当前可变异数
                             foundCount++;
                             position=pos;
@@ -191,18 +197,21 @@ public class MutationGenerator
 
     /**
      * 执行shell命令
-     * @param command
+     * @param commandstr
      */
-    private void exeCommand(String command)
+    public void exeCommand(String commandstr)
     {
         BufferedReader reader=null;
         try
         {
-            Process p=Runtime.getRuntime().exec(command);
+            String[] command = new String[] {"/bin/sh","-c",commandstr};
+
+            Process p= Runtime.getRuntime().exec(command);
+            p.waitFor();
             reader=new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line=null;
             StringBuilder strBuilder=new StringBuilder();
-            while((line=reader.readLine())!=null)
+            while((line=reader.readLine())!=null)       //bufferreader 会block线程直到p结束, 所以可以不用p.waitfor();
             {
                 strBuilder.append(line+"\n");
 
