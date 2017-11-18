@@ -14,8 +14,9 @@ public class MutationGeneratorTest
     {
         //在这里测试你的代码
         ObjectNode config=new ObjectMapper().createObjectNode();
-        config.put("ClassName","NextDate").put("Line",73).put("Expression","yearNow == yearUpper");
-        MutationGenerator generator=new MutationGenerator("../resources/hw1_unittest_source","../resources/hw1_unittest_mutation1",config);
+        config.put("MutationSize",5);
+        config.put("MutationMethodNum",2);
+        MutationGenerator generator=new MutationGenerator("../resources/hw1_unittest_source","../resources/hw1_unittest_mutation",config);
         generator.runMutation();
 
     }

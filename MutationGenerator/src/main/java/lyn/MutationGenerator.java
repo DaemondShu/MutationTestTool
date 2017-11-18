@@ -1,44 +1,52 @@
 package lyn;
 
+import clover.com.google.gson.JsonObject;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MutationGenerator
 {
+    //源文件路径
     private String SourcePath;
+    //变异体生成路径
     private String MutationPath;
-    private JsonNode Config;
-    private String ClassName;
-    private int LineNumber;
-    private String Expression;
-    private int MutationNumber;
-    private static ObjectNode MutationMethod=newJsonObject();
+    //样本量，即累计几个样本后抽取一个进行变异
+    private int MutationSize;
+    //变异方式的种数
+    private int MutationMethodNum;
+    private static Map<String,ArrayList<String>> MutationMethod=new HashMap<>();
+    private static ObjectNode mutationInfo=new ObjectMapper().createObjectNode();
+    private static String testCodePath="/src/main/java/third_party/";
+    //输出json文件的路径
+    private static String jsonFileName="../resources/mutationInfo.json";
+    //测试的类集合
+    private static String[] testFileList={"LunarUtil.java","NextDate.java"};
+    //变异的符号集
+    private static String[] operList={"<=",">=","==","!=","||","&&","<",">","++","--","+","-"};
 
-
-    private static ObjectNode newJsonObject()
-    {
-        return new ObjectMapper().createObjectNode();
-    }
-    private static ArrayNode newArrayNode()
-    {
-        return new ObjectMapper().createArrayNode();
-    }
+    /**
+     * 变异生成器启动时初始化变异的方式
+     */
     private void InitMutationMethod()
     {
-        MutationMethod.set("<",newArrayNode().add("<=").add(">=").add(">").add("==").add("!="));
-        MutationMethod.set(">",newArrayNode().add("<=").add(">=").add("<").add("==").add("!="));
-        MutationMethod.set("<=",newArrayNode().add("<").add(">").add(">=").add("==").add("!="));
-        MutationMethod.set(">=",newArrayNode().add("<").add(">").add("<=").add("==").add("!="));
-        MutationMethod.set("==",newArrayNode().add("<").add(">").add("<=").add(">=").add("!="));
-        MutationMethod.set("!=",newArrayNode().add("<").add(">").add("<=").add(">=").add("=="));
-        MutationMethod.set("+",newArrayNode().add("-"));
-        MutationMethod.set("-",newArrayNode().add("+"));
-        MutationMethod.set("*",newArrayNode().add("/"));
-        MutationMethod.set("/",newArrayNode().add("*"));
+        MutationMethod.put("<",new ArrayList<String>(){{add("<=");add(">");add(">=");add("==");add("!=");}});
+        MutationMethod.put(">",new ArrayList<String>(){{add("<");add(">=");add("<=");add("==");add("!=");}});
+        MutationMethod.put("<=",new ArrayList<String>(){{add("<");add(">=");add(">");add("==");add("!=");}});
+        MutationMethod.put(">=",new ArrayList<String>(){{add("<=");add(">");add(">");add("==");add("!=");}});
+        MutationMethod.put("==",new ArrayList<String>(){{add("<=");add(">=");add("!=");}});
+        MutationMethod.put("!=",new ArrayList<String>(){{add("<=");add(">=");add("==");}});
+        MutationMethod.put("+",new ArrayList<String>(){{add("-");}});
+        MutationMethod.put("-",new ArrayList<String>(){{add("+");}});
+        MutationMethod.put("++",new ArrayList<String>(){{add("--");}});
+        MutationMethod.put("--",new ArrayList<String>(){{add("++");}});
+        MutationMethod.put("||",new ArrayList<String>(){{add("&&");}});
+        MutationMethod.put("&&",new ArrayList<String>(){{add("||");}});
     }
     /**
      *
@@ -50,11 +58,8 @@ public class MutationGenerator
     {
         SourcePath=sourcePath;
         MutationPath=mutationPath;
-        Config=config;
-        ClassName=Config.get("ClassName").asText();
-        LineNumber=Config.get("Line").asInt();
-        Expression=Config.asText("Expression");
-        MutationNumber=Config.get("MutationNumber").asInt();
+        MutationSize=config.get("MutationSize").asInt();
+        MutationMethodNum=config.get("MutationMethodNum").asInt();
         InitMutationMethod();
     }
 
@@ -65,113 +70,227 @@ public class MutationGenerator
     public JsonNode runMutation()
     {
 
-        copyFolder(SourcePath,MutationPath);
-        return null;
-    }
-    /**
-            * 复制单个文件
-    * @param oldPath String 原文件路径 如：c:/fqf.txt
-    * @param newPath String 复制后路径 如：f:/fqf.txt
-    * @return boolean
-    */
-//    public void copyFile(String oldPath, String newPath) {
-//        try {
-//            int bytesum = 0;
-//            int byteread = 0;
-//            File oldfile = new File(oldPath);
-//            if (oldfile.exists()) { //文件存在时
-//                InputStream inStream = new FileInputStream(oldPath); //读入原文件
-//                FileOutputStream fs = new FileOutputStream(newPath);
-//                byte[] buffer = new byte[1444];
-//                int length;
-//                while ( (byteread = inStream.read(buffer)) != -1) {
-//                    bytesum += byteread; //字节数 文件大小
-//                    System.out.println(bytesum);
-//                    fs.write(buffer, 0, byteread);
-//                }
-//                inStream.close();
-//            }
-//        }
-//        catch (Exception e) {
-//            System.out.println("复制单个文件操作出错");
-//            e.printStackTrace();
-//
-//        }
-//
-//    }
 
-    /**
-     * 复制整个文件夹内容
-     * @param oldPath String 原文件路径 如：c:/fqf
-     * @param newPath String 复制后路径 如：f:/fqf/ff
-     * @return boolean
-     */
-    public void copyFolder(String oldPath, String newPath) {
+        int testNumber=0;
+        //对每个待测源代码文件进行扫描
+        for(String fileName:testFileList)
+        {
+            //当前文件名
+            String file=SourcePath+testCodePath+fileName;
+            //当前正在变异的文件
+            File currentFile=new File(file);
+            //删除源文件的注释
+            clearComment(currentFile,"UTF-8");
+            try
+            {
+                LineNumberReader reader=new LineNumberReader(new FileReader(currentFile));
+                String line=null;
+                int lineNumber=0;
+                int posLineNumber=0;
+                int foundCount=0;
+                //读取每行
+                while((line=reader.readLine())!=null)
+                {
 
-        try {
-            (new File(newPath)).mkdirs(); //如果文件夹不存在 则建立新文件夹
-            File a=new File(oldPath);
-            String[] file=a.list();
-            File temp=null;
-            for (int i = 0; i < file.length; i++) {
-                if(oldPath.endsWith(File.separator)){
-                    temp=new File(oldPath+file[i]);
-                }
-                else{
-                    temp=new File(oldPath+File.separator+file[i]);
-                }
+                    //记录代码行数
+                    lineNumber++;
+                    //pos记录可变异符号出现的位置
 
-                if(temp.isFile()){
+                    int position=0;
+                    //标识是否有匹配的可变异符号
+                    boolean found=true;
 
+                    while(found)
+                    {
+                        int pos=0;
+                        //index=pos;
+                        found=false;
+                        String operation="";
 
- //                   if(temp.getName()==ClassName)
-//                    {
-                        BufferedReader reader=new BufferedReader(new FileReader(temp));
-                        BufferedWriter writer=new BufferedWriter(new FileWriter(newPath + "/" +
-                                (temp.getName()).toString()));
-
-                        int line=0;
-                        String readStr=null;
-                        while((readStr=reader.readLine())!=null)
+                        //对于每个可变异符号进行匹配，依次获取（符号：位置）的对应信息
+                        for(String oper:operList)
                         {
-                            line++;
-                            if(temp.getName()==ClassName+".java" && line==LineNumber)
-
-                            writer.write(readStr+"\r\n");
+                            int tmp=line.indexOf(oper,position);
+                            //又匹配到符号同时比较符号的优先性
+                            if(tmp>=0)
+                            {
+                                if(pos==0 || tmp<pos)
+                                {
+                                    //更新pos信息以及operation
+                                    pos = tmp;
+                                    operation = oper;
+                                    posLineNumber = lineNumber;
+                                    found = true;
+                                }
+                            }
 
                         }
-                        writer.flush();
-                        writer.close();
-                        reader.close();
-  //                  }
-//                    else
-//                    {
-//                        FileInputStream input = new FileInputStream(temp);
-//                        FileOutputStream output = new FileOutputStream(newPath + "/" +
-//                                (temp.getName()).toString());
-//                        byte[] b = new byte[1024 * 5];
-//                        int len;
-//                        while ( (len = input.read(b)) != -1) {
-//                            output.write(b, 0, len);
-//                        }
-//                        output.flush();
-//                        output.close();
-//                        input.close();
-//                    }
+                        if(found)
+                        {
+                            //记录当前可变异数
+                            foundCount++;
+                            position=pos;
+                            //每隔MutationSize个生成变异
+                            if(foundCount==MutationSize)
+                            {
+                                ArrayList<String> method=MutationMethod.get(operation);
+                                for(int i=0;i<MutationMethodNum && i<method.size();i++)
+                                {
+                                    ++testNumber;
+                                    //复制源文件
+                                    exeCommand("cp -r "+SourcePath+" "+MutationPath+testNumber);
+                                    //修改
+                                    LineNumberReader antherReader=new LineNumberReader(new FileReader(new File(file)));
+                                    String lineStr=null;
+                                    BufferedWriter writer=new BufferedWriter(new FileWriter
+                                        (new File(MutationPath+testNumber+testCodePath+fileName)));
+                                    while((lineStr=antherReader.readLine())!=null)
+                                    {
+                                        if(antherReader.getLineNumber()!=posLineNumber)
+                                            writer.write(lineStr+"\r\n");
+                                        else
+                                        {
 
+                                            String head=lineStr.substring(0,pos);
+                                            String tail=lineStr.substring(pos+operation.length(),lineStr.length());
+                                            String newLine=head+method.get(i)+tail+"\r\n";
+                                            ObjectNode object=new ObjectMapper().createObjectNode();
+                                            object.put("className",fileName).put("lineNumber",posLineNumber)
+                                                    .put("origin",lineStr.trim()).put("mutation",newLine.trim());
+                                            mutationInfo.set("mutation"+testNumber,object);
+                                            writer.write(newLine);
+                                        }
+                                    }
+                                    writer.flush();
+                                    writer.close();
+                                    antherReader.close();
+                                    foundCount=0;
 
+                                }
+                            }
+                            position+=operation.length();
+                        }
+
+                    }
 
                 }
-                if(temp.isDirectory()){//如果是子文件夹
-                    copyFolder(oldPath+"/"+file[i],newPath+"/"+file[i]);
+
+                reader.close();
+               // writeJson(jsonFileName,mutationInfo);
+
+            }catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+
+            testNumber++;
+        }
+
+        return mutationInfo;
+    }
+
+    /**
+     * 执行shell命令
+     * @param command
+     */
+    private void exeCommand(String command)
+    {
+        BufferedReader reader=null;
+        try
+        {
+            Process p=Runtime.getRuntime().exec(command);
+            reader=new BufferedReader(new InputStreamReader(p.getInputStream()));
+            String line=null;
+            StringBuilder strBuilder=new StringBuilder();
+            while((line=reader.readLine())!=null)
+            {
+                strBuilder.append(line+"\n");
+
+            }
+            System.out.println(strBuilder.toString());
+        }catch (Exception e)
+        {
+            e.printStackTrace();
+        }finally {
+            if(reader!=null)
+            {
+                try {
+                    reader.close();
+                }catch (Exception e)
+                {
+                    e.printStackTrace();
                 }
             }
         }
-        catch (Exception e) {
-            System.out.println("复制整个文件夹内容操作出错");
-            e.printStackTrace();
 
+    }
+
+    /**
+     * 删除所有注释
+     * @param file
+     * @param charset
+     */
+    private static void clearComment(File file, String charset) {
+        try {
+            //递归处理文件夹
+            if (!file.exists()) {
+                return;
+            }
+
+            if (file.isDirectory()) {
+                File[] files = file.listFiles();
+                for (File f : files) {
+                    clearComment(f, charset); //递归调用
+                }
+                return;
+            } else if (!file.getName().endsWith(".java")) {
+                //非java文件直接返回
+                return;
+            }
+
+            //根据对应的编码格式读取
+            BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), charset));
+            StringBuffer content = new StringBuffer();
+            String tmp = null;
+            while ((tmp = reader.readLine()) != null) {
+                content.append(tmp);
+                content.append("\n");
+            }
+            String target = content.toString();
+            //String s = target.replaceAll("\\/\\/[^\\n]*|\\/\\*([^\\*^\\/]*|[\\*^\\/*]*|[^\\**\\/]*)*\\*\\/", ""); //本段正则摘自网上，有一种情况无法满足（/* ...**/），略作修改
+            String s = target.replaceAll("\\/\\/[^\\n]*|\\/\\*([^\\*^\\/]*|[\\*^\\/*]*|[^\\**\\/]*)*\\*+\\/", "");
+            //System.out.println(s);
+            //使用对应的编码格式输出
+            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), charset));
+            out.write(s);
+            out.flush();
+            out.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+    }
+
+    /**
+     * 写json文件
+     * @param fileName
+     * @param json
+     */
+    private static void writeJson(String fileName,JsonNode json)
+    {
+        PrintWriter printWriter=null;
+        try
+        {
+            printWriter=new PrintWriter(new FileWriter(fileName));
+            printWriter.write(json.toString());
+            printWriter.flush();
+
+        }catch (Exception e)
+        {
+            e.printStackTrace();
+        }finally {
+            printWriter.close();
+        }
+
 
     }
 }
