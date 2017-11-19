@@ -7,7 +7,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.util.*;
 
 
@@ -29,6 +31,43 @@ public class BatchTester
         this.originPath=originPath;
     }
 
+
+    public void exeCommand(String commandstr)
+    {
+        BufferedReader reader=null;
+        try
+        {
+            System.out.println("start" + commandstr);
+            String[] command = new String[] {"/bin/sh","-c",commandstr};
+
+            Process p= Runtime.getRuntime().exec(command);
+//            p.waitFor();
+            reader=new BufferedReader(new InputStreamReader(p.getInputStream()));
+            String line=null;
+            StringBuilder strBuilder=new StringBuilder();
+            while((line=reader.readLine())!=null)       //bufferreader 会block线程直到p结束, 所以可以不用p.waitfor();
+            {
+                strBuilder.append(line+"\n");
+            }
+            p.waitFor();
+            System.out.println("done" + commandstr + " " + strBuilder.toString().length());
+        }catch (Exception e)
+        {
+            e.printStackTrace();
+        }finally {
+            if(reader!=null)
+            {
+                try {
+                    reader.close();
+                }catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+    }
+
     private int traverseFile(File file) throws Exception
     {
         System.out.println("traverse");
@@ -41,20 +80,29 @@ public class BatchTester
         }
         System.out.println("ready");
         for (File f : flist) {
-            if (f.getPath().equals(originPath)){
-                continue;
-            }
-            cmd="cmd cd " +f.getPath()+"|mvn test" ;
-            //cmd="cmd mvn test" ;
-            process=Runtime.getRuntime().exec(cmd);
 
-            map.put(count,loadXmls(f));
+            try
+            {
+                if (f.getPath().equals(originPath)){
+                    continue;
+                }
+                exeCommand("(cd " + f.getPath()+";mvn test)");
+                System.out.println(f.getPath());
+                map.put(count,loadXmls(f));
 
-            if (count!=0) {
-                saveToJson(count, f);
+                if (count!=0) {
+                    saveToJson(count, f);
+                }
+                //saveToJson(count, f);
+                count++;
             }
-            //saveToJson(count, f);
-            count++;
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+
+
+
         }
 
 
@@ -171,8 +219,13 @@ public class BatchTester
 
         File file=new File(mutationPath);
         File forgin=new File(originPath);
+
+        exeCommand("(cd " + forgin.getPath()+";mvn test)");
+//        exeCommand("(cd ../resources/hw1_unittest_source;mvn test)");
+
+        System.out.println("ok");
         map.put(count,loadXmls(forgin));
-        saveToJson(count, forgin);
+//        saveToJson(count, forgin);
         count++;
         traverseFile(file);
         return resultNode;
