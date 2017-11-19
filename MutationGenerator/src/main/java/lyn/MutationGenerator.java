@@ -35,7 +35,7 @@ public class MutationGenerator
     private void InitMutationMethod()
     {
         MutationMethod.put("<",new ArrayList<String>(){{add("<=");add(">");add(">=");add("==");add("!=");}});
-        MutationMethod.put(">",new ArrayList<String>(){{add("<");add(">=");add("<=");add("==");add("!=");}});
+        MutationMethod.put(">",new ArrayList<String>(){{add(">");add(">=");add("<=");add("==");add("!=");}});
         MutationMethod.put("<=",new ArrayList<String>(){{add("<");add(">=");add(">");add("==");add("!=");}});
         MutationMethod.put(">=",new ArrayList<String>(){{add("<=");add(">");add(">");add("==");add("!=");}});
         MutationMethod.put("==",new ArrayList<String>(){{add("<=");add(">=");add("!=");}});
@@ -162,7 +162,9 @@ public class MutationGenerator
                                             String newLine=head+method.get(i)+tail+"\r\n";
                                             ObjectNode object=new ObjectMapper().createObjectNode();
                                             object.put("className",fileName).put("lineNumber",posLineNumber)
-                                                    .put("origin",lineStr.trim()).put("mutation",newLine.trim());
+                                                    .put("origin",lineStr.trim()).put("mutation",newLine.trim())
+                                                    .put("ori_oper", operation).put("mu_oper", method.get(i))
+                                            ;
                                             mutationInfo.set("mutation"+testNumber,object);
                                             writer.write(newLine);
                                         }

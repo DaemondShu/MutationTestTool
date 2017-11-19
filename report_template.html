@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/flatly/bootstrap.min.css" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular-animate.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular-touch.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/2.5.0/ui-bootstrap-tpls.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/3.8.5/echarts.min.js"></script>
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-charts/0.2.7/angular-charts.min.js"></script> -->
+</head>
+
+<body ng-app="myApp" ng-controller="userCtrl">
+
+  <div class="container">
+
+    <div class="row">
+
+      <h3 style="cursor:pointer" ng-click="isCollapsed1 = !isCollapsed1">Mutations Info</h3>
+      <hr>
+      <div uib-collapse="isCollapsed1">
+        <div id="mutationsInfoGraph" style="width: auto; height:400px;"></div>
+
+
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Class</th>
+              <th>Line Number</th>
+              <th>Origin Code</th>
+              <th>Mutation Code</th>
+              <th colspan="3" style="text-align: center">Mutation Operation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="(mutationID, mutationInfo) in mutations">
+              <td>{{ mutationID | getID}} </td>
+              <td>{{ mutationInfo.className | getClass}} </td>
+              <td>{{ mutationInfo.lineNumber }} </td>
+              <td>{{ mutationInfo.origin}} </td>
+              <td>{{ mutationInfo.mutation}} </td>
+              <td style="text-align: right">{{ mutationInfo.ori_oper}}</td>
+              <td style="text-align: center"><span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span></td>
+              <td style="text-align: left">{{mutationInfo.mu_oper }} </td>
+           
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+      
+
+    </div>
+
+    <div class="row">
+      <h3 style="cursor:pointer" ng-click="isCollapsed = !isCollapsed">Mutations Test Result</h3>
+      <hr>
+      <div uib-collapse="isCollapsed">
+        <table class="table">
+          <thead>
+            <tr>
+              <th rowspan="2">ID</th>
+              <th ng-repeat="className in classNames" style="text-align: center">
+                {{className}} <br/> {{'(Total/Passed/failure)' }} 
+              </th>
+            </tr>
+
+          </thead>
+          <tbody>
+            <tr ng-repeat="result in testResults | orderBy: 'ID' ">
+              <td>{{ result.ID}} </td>
+              <td style="text-align: center" ng-repeat="className in classNames">
+              {{result[className].testNum + "/" + result[className].OK + "/" + result[className].failures}}
+              
+              <span class="label label-warning" ng-show="result[className].difference.length == 0"> <span class="glyphicon glyphicon-warning-sign" aria-hidden="true"></span></span>
+   
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+<script>
+  function getNum(text) {
+    var value = "";
+    for (var i = text.length -1; i>=0; i--)
+    {
+        if (text[i] >= '0' && text[i] <= '9')
+          value = text[i] + value;
+        else break;
+    }
+    return value;
+
+    // var value = text.replace(/[^0-9]/ig, "");
+    // return value;
+  }
+
+
+  function initMutationGraph( rawData)
+  {
+    data = {};
+      for (var key in rawData)
+      {
+        info = rawData[key];
+        if (data[info.ori_oper] == undefined)
+          data[info.ori_oper] = 1;
+        else
+          data[info.ori_oper] ++;
+      }
+      muData = [];
+      max = 1;
+      for (var name in data)
+      {
+        muData.push({name:name, value:data[name]})
+        if (data[name]>max)
+          max = data[name];
+      }
+
+
+option = {
+    // backgroundColor: '#2c343c',
+
+    // title: {
+    //     text: 'Mutations Info Graph',
+    //     left: 'center',
+    //     top: 20,
+    //     textStyle: {
+    //         color: '#ccc'
+    //     }
+    // },
+
+
+    tooltip : {
+        trigger: 'item',
+        formatter: "{a} <br/>{b} : {c} ({d}%)"
+    },
+
+    visualMap: {
+        show: false,
+        min: 0,
+        max: max*2,
+        inRange: {
+            colorLightness: [0, 1]
+        }
+    },
+    series : [
+        {
+            name:'变异个数',
+            type:'pie',
+            radius : '75%',
+            center: ['50%', '50%'],
+            data:muData.sort(function (a, b) { return a.value - b.value; }),
+            roseType: 'radius',
+            label: {
+                normal: {
+                    textStyle: {
+                        color: 'rgba(0, 0, 0, 0.5)'
+                    }
+                }
+            },
+            labelLine: {
+                normal: {
+                    lineStyle: {
+                        color: 'rgba(0, 0, 0, 0.3)'
+                    },
+                    smooth: 0.2,
+                    length: 10,
+                    length2: 20
+                }
+            },
+            itemStyle: {
+                normal: {
+                    color: '#eeeeee',
+                    shadowBlur: 200,
+                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                }
+            },
+
+            animationType: 'scale',
+            animationEasing: 'elasticOut',
+            animationDelay: function (idx) {
+                return Math.random() * 200;
+            }
+        }
+    ]
+};
+
+  var MutationCharts = echarts.init(document.getElementById('mutationsInfoGraph'));
+  MutationCharts.setOption(option);
+  }
+
+  app = angular.module('myApp', ['ui.bootstrap', 'ngAnimate']);
+  app.controller('userCtrl', function ($scope) {
+
+//    $scope.mutations = {"mutation1":{"className":"LunarUtil.java","lineNumber":119,"origin":"if (monthIndex == leapMonth && monthTemp == leapMonth + 1) isLeapMonth = true;","mutation":"if (monthIndex == leapMonth || monthTemp == leapMonth + 1) isLeapMonth = true;","ori_oper":"&&","mu_oper":"||"},"mutation2":{"className":"LunarUtil.java","lineNumber":181,"origin":"if (leapMonth == 0)","mutation":"if (leapMonth <= 0)","ori_oper":"==","mu_oper":"<="},"mutation3":{"className":"LunarUtil.java","lineNumber":181,"origin":"if (leapMonth == 0)","mutation":"if (leapMonth >= 0)","ori_oper":"==","mu_oper":">="},"mutation5":{"className":"NextDate.java","lineNumber":148,"origin":"day += n;","mutation":"day -= n;","ori_oper":"+","mu_oper":"-"},"mutation6":{"className":"NextDate.java","lineNumber":194,"origin":"return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0);","mutation":"return ((year % 4 == 0 && year % 100 != 0) || year % 400 <= 0);","ori_oper":"==","mu_oper":"<="},"mutation7":{"className":"NextDate.java","lineNumber":194,"origin":"return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0);","mutation":"return ((year % 4 == 0 && year % 100 != 0) || year % 400 >= 0);","ori_oper":"==","mu_oper":">="}};
+//    var tests = {"mutation1":{"third_party.lunarUtilTest":{"testNum":60,"OK":34,"failures":26,"difference":[{"name":"getLunarDateInfoBoundaryTest009","origin":"","mutation":"arrays first differed at element [1]; expected:<[]正月大> but was:<[闰]正月大>"},{"name":"getLunarDateInfoBoundaryTest022","origin":"","mutation":"arrays first differed at element [1]; expected:<[]正月大> but was:<[闰]正月大>"},{"name":"getLunarDateInfoBoundaryTest023","origin":"","mutation":"arrays first differed at element [1]; expected:<[]正月大> but was:<[闰]正月大>"},{"name":"getLunarDateInfoBoundaryTest025","origin":"","mutation":"arrays first differed at element [1]; expected:<[]正月小> but was:<[闰]正月小>"},{"name":"getLunarDateInfoBoundaryTest026","origin":"","mutation":"arrays first differed at element [1]; expected:<[]正月小> but was:<[闰]正月小>"},{"name":"getLunarDateInfoTest008","origin":"","mutation":"arrays first differed at element [1]; expected:<[]正月大> but was:<[闰]正月大>"}]},"third_party.NextDateTest":{"testNum":67,"OK":61,"failures":6,"difference":[]}},"mutation2":{"third_party.lunarUtilTest":{"testNum":60,"OK":40,"failures":20,"difference":[]},"third_party.NextDateTest":{"testNum":67,"OK":61,"failures":6,"difference":[]}},"mutation3":{"third_party.lunarUtilTest":{"testNum":60,"OK":58,"failures":2,"difference":[{"name":"getDayNumBoundaryTest002","origin":"","mutation":"12"},{"name":"getDayNumBoundaryTest003","origin":"","mutation":"12"},{"name":"getDayNumBoundaryTest004","origin":"","mutation":"12"},{"name":"getDayNumBoundaryTest008","origin":"","mutation":"12"},{"name":"getDayNumBoundaryTest010","origin":"","mutation":"12"},{"name":"getDayNumTest004","origin":"","mutation":"12"},{"name":"getDayNumTest005","origin":"","mutation":"12"},{"name":"getDayNumTest006","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest003","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest004","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest005","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest009","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest010","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest011","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest014","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest015","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest016","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest017","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest019","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest020","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest022","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest023","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest025","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest026","origin":"","mutation":"12"},{"name":"getLunarDateInfoTest008","origin":"","mutation":"12"},{"name":"getLunarDateInfoTest009","origin":"","mutation":"12"},{"name":"getLunarDateInfoTest013","origin":"","mutation":"12"},{"name":"getLunarDateInfoTest014","origin":"","mutation":"12"},{"name":"getLunarDateInfoTest015","origin":"","mutation":"12"}]},"third_party.NextDateTest":{"testNum":67,"OK":61,"failures":6,"difference":[]}},"mutation5":{"third_party.lunarUtilTest":{"testNum":60,"OK":40,"failures":20,"difference":[]},"third_party.NextDateTest":{"testNum":67,"OK":58,"failures":9,"difference":[{"name":"GetNextDateInfoTest018","origin":"","mutation":"expected:<[1, 2008, 1, 2, 己丑年, 二月小, 初二, 牛]> but was:<[1, 2007, 12, -29, 己丑年, 二月小, 初二, 牛]>"},{"name":"GetNextDateInfoTest019","origin":"","mutation":"expected:<[1, 2008, 5, 4, 己丑年, 二月小, 初二, 牛]> but was:<[1, 2008, 5, 0, 己丑年, 二月小, 初二, 牛]>"},{"name":"GetNextDateInfoTest020","origin":"","mutation":"expected:<[1, 2008, 4, 9, 己丑年, 二月小, 初二, 牛]> but was:<[1, 2008, 3, -18, 己丑年, 二月小, 初二, 牛]>"}]}},"mutation6":{"third_party.lunarUtilTest":{"testNum":60,"OK":40,"failures":20,"difference":[]},"third_party.NextDateTest":{"testNum":67,"OK":61,"failures":6,"difference":[]}},"mutation7":{"third_party.lunarUtilTest":{"testNum":60,"OK":40,"failures":20,"difference":[]},"third_party.NextDateTest":{"testNum":67,"OK":58,"failures":9,"difference":[{"name":"GetNextDateInfoTest006","origin":"","mutation":"expected:<[0, 输入的日期不存在]> but was:<[1, 1905, 3, 1, 己丑年, 二月小, 初二, 牛]>"},{"name":"ValidDateBoundaryTest024","origin":"","mutation":"expected:<102> but was:<100>"},{"name":"validDateTest006","origin":"","mutation":"expected:<102> but was:<100>"}]}}};
+//
+
+    $scope.mutations = mutationInfoReplace;
+    tests = testResultReplace;
+
+    var classNames = new Array();
+    set = new Set();
+    $scope.testResults = new Array();
+
+    var isFirst = true;
+    for (var key in tests) {
+      console.log(key);
+
+      if (isFirst) {
+        for (var className in tests[key]) {
+          classNames.push(className);
+        }
+        isFirst = false;
+      }
+    
+      tests[key]["ID"] = getNum(key)
+      $scope.testResults.push(tests[key]);
+
+      
+    }
+    $scope.classNames = classNames;
+
+
+    
+
+    initMutationGraph($scope.mutations);
+  });
+
+  // 删除.java后缀
+  app.filter('getClass', function () {
+    return function (text) {
+      return text.substr(0, text.length - 5)
+    }
+  });
+
+
+
+  app.filter('getID', function () {
+    return function (text) {
+      return getNum(text);
+    }
+  });
+</script>
+
+</html>
