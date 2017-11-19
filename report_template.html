@@ -222,7 +222,7 @@ option = {
         isFirst = false;
       }
     
-      tests[key]["ID"] = getNum(key)
+      tests[key]["ID"] = eval(getNum(key));
       $scope.testResults.push(tests[key]);
 
       
