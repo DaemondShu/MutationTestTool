@@ -87,7 +87,8 @@ public class LunarUtil
     {
 
         // 越界直接返回
-        if (year > yearUpper || year < yearBase) return new String[]{"", "", "", ""};
+        /*FAULT## FAILURE INDUCING CODE */
+        if (year > yearUpper && year < yearBase) return new String[]{"", "", "", ""};
         int total=differentDaysByMillisecond(new Date(year-yearBase,month-1,day));
         // 正常算法
         // 1900年为庚子年
@@ -98,7 +99,9 @@ public class LunarUtil
         boolean isLeapMonth = false;
         String strDay;  // 农历日
         // 1900年1月特殊处理
-        if (total < 30)
+
+
+        if (total > 30)
         {
             ganIndex = 5;
             zhiIndex = 11;

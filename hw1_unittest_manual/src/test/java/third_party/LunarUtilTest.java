@@ -479,7 +479,8 @@ public class LunarUtilTest {
     @Test public void getDayNumBoundaryTest011() throws Exception{VerifyGetDayNumBoundaryTest("011");}
 
 
-    @Test public void getLunarDateInfoBoundaryTest001() throws  Exception{VerifyGetLunarDateInfoBoundaryTest("001");}
+    @Test public void
+    getLunarDateInfoBoundaryTest001() throws  Exception{VerifyGetLunarDateInfoBoundaryTest("001");}
     //万年历查出来是 三月小十五，它算出来是十四
     @Test public void getLunarDateInfoBoundaryTest002() throws  Exception{VerifyGetLunarDateInfoBoundaryTest("002");}
     @Test public void getLunarDateInfoBoundaryTest003() throws  Exception{VerifyGetLunarDateInfoBoundaryTest("003");}
