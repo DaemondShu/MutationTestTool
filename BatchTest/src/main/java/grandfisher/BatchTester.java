@@ -162,9 +162,9 @@ public class BatchTester
             jsonArray.add(new ObjectMapper().createObjectNode().put("name",name).put("origin",normalm.get(name)).put("mutation",m.get(name)));
         }
 
-        funcNode.put("testNum:", Integer.parseInt(fun.get("tests")));
-        funcNode.put("OK:",Integer.parseInt(fun.get("tests"))-Integer.parseInt(fun.get("failures")));
-        funcNode.put("failures:",Integer.parseInt(fun.get("failures")));
+        funcNode.put("testNum", Integer.parseInt(fun.get("tests")));
+        funcNode.put("OK",Integer.parseInt(fun.get("tests"))-Integer.parseInt(fun.get("failures")));
+        funcNode.put("failures",Integer.parseInt(fun.get("failures")));
         funcNode.set("difference",jsonArray);
         return funcNode;
 
