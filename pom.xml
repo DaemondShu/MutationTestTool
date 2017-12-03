@@ -13,6 +13,7 @@
         <module>BatchTest</module>
         <module>ReportGenerator</module>
         <module>hw1_unittest_manual</module>
+        <module>TestCaseGenerator</module>
     </modules>
 
     <dependencies>
