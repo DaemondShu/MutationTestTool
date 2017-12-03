@@ -86,7 +86,7 @@ public class BatchTester
                 if (f.getPath().equals(originPath)){
                     continue;
                 }
-                exeCommand("(cd " + f.getPath()+";mvn test)");
+                exeCommand("(cd " + f.getPath()+";mvn clean;mvn test)");
                 System.out.println(f.getPath());
                 map.put(count,loadXmls(f));
 
