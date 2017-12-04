@@ -31,8 +31,6 @@ public class Commander
     @Parameter(names = {"-r", "--role"}, description = "单独执行某一步, 1=变异体生成, 2=变异体测试, 3=报告生成")
     public Integer role = 0;
 
-
-
     static private void MutationGenerate(Commander config) throws Exception
     {
         ObjectNode genConfig=new ObjectMapper().createObjectNode();

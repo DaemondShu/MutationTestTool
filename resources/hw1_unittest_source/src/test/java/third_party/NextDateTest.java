@@ -5,17 +5,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.util.RawValue;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class NextDateTest
 {
@@ -361,6 +363,12 @@ public class NextDateTest
                         .add(lunarInfoMock[0]).add(lunarInfoMock[1]).add(lunarInfoMock[2]).add(lunarInfoMock[3]),
                 newArrayNode().add(2008).add(3).add(10).add(30));
 
+        //计算后几天：2008年3月10日，n=30,day超过当月日期但month不等于13
+        testdata=ConstructTestData(testdata,"021",
+                newArrayNode().add(NextDate.SUCCESS).add(2008).add(12).add(1)
+                        .add(lunarInfoMock[0]).add(lunarInfoMock[1]).add(lunarInfoMock[2]).add(lunarInfoMock[3]),
+                newArrayNode().add(2008).add(11).add(10).add(21));
+
         return testdata;
     }
 
@@ -481,6 +489,8 @@ public class NextDateTest
     @Test public void GetNextDateInfoTest019() throws Exception { VerifyGetNextDateInfo("019"); }
 
     @Test public void GetNextDateInfoTest020() throws Exception { VerifyGetNextDateInfo("020"); }
+    @Test public void GetNextDateInfoTest021() throws Exception { VerifyGetNextDateInfo("021"); }
+
 
     @Test public void GetNextDateInfoBoundaryTest001() throws  Exception{VerifyGetNextDateInfoBoundaryTest("001");}
     @Test public void GetNextDateInfoBoundaryTest002() throws  Exception{VerifyGetNextDateInfoBoundaryTest("002");}

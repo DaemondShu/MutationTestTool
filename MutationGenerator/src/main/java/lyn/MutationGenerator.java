@@ -27,18 +27,20 @@ public class MutationGenerator
     //测试的类集合
     private static String[] testFileList={"LunarUtil.java","NextDate.java"};
     //变异的符号集
-    private static String[] operList={"<=",">=","==","!=","||","&&","<",">","++","--","+","-"};
+    private static String[] operList={"<<",">>","<=",">=","==","!=","||","&&","<",">","++","--","+","-"};
 
     /**
      * 变异生成器启动时初始化变异的方式
      */
     private void InitMutationMethod()
     {
+        MutationMethod.put("<<", new ArrayList<String>(){{add(">>");}});
+        MutationMethod.put(">>", new ArrayList<String>(){{add("<<");}});
         MutationMethod.put("<",new ArrayList<String>(){{add("<=");add(">");add(">=");add("==");add("!=");}});
-        MutationMethod.put(">",new ArrayList<String>(){{add(">");add(">=");add("<=");add("==");add("!=");}});
+        MutationMethod.put(">",new ArrayList<String>(){{add(">=");add("<");add("<=");add("==");add("!=");}});
         MutationMethod.put("<=",new ArrayList<String>(){{add("<");add(">=");add(">");add("==");add("!=");}});
         MutationMethod.put(">=",new ArrayList<String>(){{add("<=");add(">");add(">");add("==");add("!=");}});
-        MutationMethod.put("==",new ArrayList<String>(){{add("<=");add(">=");add("!=");}});
+        MutationMethod.put("==",new ArrayList<String>(){{add("<");add(">");add("!=");}});
         MutationMethod.put("!=",new ArrayList<String>(){{add("<=");add(">=");add("==");}});
         MutationMethod.put("+",new ArrayList<String>(){{add("-");}});
         MutationMethod.put("-",new ArrayList<String>(){{add("+");}});
