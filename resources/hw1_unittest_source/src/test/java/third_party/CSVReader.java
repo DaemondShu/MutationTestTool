@@ -16,7 +16,7 @@ import java.util.List;
  * Created by lyn on 17-12-4.
  */
 public class CSVReader {
-    String testcaseFilePath="../resources/testcase/";
+    String testcaseFilePath="../testcase/";
     String funcName="";
     public CSVReader(String name)
     {
