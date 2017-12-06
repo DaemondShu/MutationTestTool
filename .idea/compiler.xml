@@ -8,17 +8,21 @@
         <outputRelativeToContentRoot value="true" />
         <module name="BatchTest" />
         <module name="hw1_unittest_manual" />
+        <module name="hw1_unittest_parameterized" />
         <module name="MutationGenerator" />
         <module name="ReportGenerator" />
+        <module name="TestCaseGenerator" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="BatchTest" target="1.5" />
+      <module name="BatchTest" target="1.8" />
       <module name="hw1_unittest" target="1.8" />
       <module name="hw1_unittest_manual" target="1.8" />
-      <module name="MutationGenerator" target="1.5" />
-      <module name="MutationTestTool" target="1.5" />
-      <module name="ReportGenerator" target="1.5" />
+      <module name="hw1_unittest_parameterized" target="1.8" />
+      <module name="MutationGenerator" target="1.8" />
+      <module name="MutationTestTool" target="1.8" />
+      <module name="ReportGenerator" target="1.8" />
+      <module name="TestCaseGenerator" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>

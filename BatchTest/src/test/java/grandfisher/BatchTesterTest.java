@@ -20,6 +20,7 @@ public class BatchTesterTest
         String  mutationPath=".."+ File.separator+ "resources";
         String  originPath=".."+ File.separator+ "resources"+File.separator+"hw1_unittest_source";
         BatchTester batchTester= new BatchTester(mutationPath,originPath);
+        System.out.println("----------------------------------------------------------------------");
         System.out.println(
                 new ObjectMapper().writerWithDefaultPrettyPrinter()
                         .writeValueAsString(batchTester.runTest()));

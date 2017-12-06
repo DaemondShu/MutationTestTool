@@ -18,10 +18,13 @@ public class BatchTester
     private static ObjectNode resultNode = new ObjectMapper().createObjectNode();
     private static Map<Integer,Map<Integer,Map<String,String>>> map=new TreeMap<>();
     private static int count=0;
+    //
     private static Map<String,String> funLunar=new TreeMap<>();
     private static Map<String,String> funNext=new TreeMap<>();
     private static String mutationPath;
     private static String originPath;
+    private static String errmsg="compile error";
+
     /**
      * @param mutationPath  变异体输出的位置
      */
@@ -101,8 +104,6 @@ public class BatchTester
                 e.printStackTrace();
             }
 
-
-
         }
 
 
@@ -113,37 +114,45 @@ public class BatchTester
     {
         Map<Integer,Map<String,String>> tmap=new TreeMap<>();
 
-        Map<String,Map<String,String>> temp;
         //File fDir=new File(file.separator);
         String strFile1= file.getPath()+File.separator+"target"+File.separator+"surefire-reports"+File.separator
                 +"TEST-third_party.LunarUtilTest.xml";
         String strFile2= file.getPath()+File.separator+"target"+File.separator+"surefire-reports"+File.separator
                 +"TEST-third_party.NextDateTest.xml";
-
         File f1=new File(strFile1);
         File f2=new File(strFile2);
 
+        tmap.putAll(load(f1,tmap,1));
+        tmap.putAll(load(f2,tmap,2));
+
+        return tmap;
+    }
+
+    private Map<Integer,Map<String,String>> load(File file,Map<Integer,Map<String,String>> tmap,int num){
+        Map<String,Map<String,String>> temp;
 
         if (count==0){
-            temp=DOM4JTest.analysisNormal(f1,0);
+            temp=DOM4JTest.analysisNormal(file,0);
         }else {
-            temp=DOM4JTest.analysis(f1);
+            temp=DOM4JTest.analysis(file);
         }
-        funLunar=temp.get("funmsg");
-        tmap.put(1,temp.get("rMap"));
+        if (temp.containsKey("compile error")){
+            tmap.put(0, (Map<String, String>) new TreeMap<>().put("error","compile error"));
+        }else {
+            if (num==1){
+                funLunar = temp.get("funmsg");
+            }else {
+                funNext = temp.get("funmsg");
+            }
 
-        if (count==0){
-            temp=DOM4JTest.analysisNormal(f2,0);
-        }else {
-            temp=DOM4JTest.analysis(f2);
+            tmap.put(num, temp.get("rMap"));
         }
-        funNext=temp.get("funmsg");
-        tmap.put(2,temp.get("rMap"));
         return tmap;
     }
 
 
     private ObjectNode toJson(int count,File f,int num){
+        ObjectNode funcNode = new ObjectMapper().createObjectNode();
         Map<String,String> fun=new TreeMap<>();
         if (num==1){
             fun=funLunar;
@@ -153,8 +162,10 @@ public class BatchTester
             return null;
         }
 
-        ObjectNode funcNode = new ObjectMapper().createObjectNode();
+
+        //source
         Map<String,String> normalm=map.get(0).get(num);
+        //mutation
         Map<String,String> m=map.get(count).get(num);
 
         ArrayNode jsonArray=new ObjectMapper().createArrayNode();
@@ -174,38 +185,15 @@ public class BatchTester
     private JsonNode saveToJson(int count,File f)
     {
         String fileName=f.getName();
-//        ArrayNode jsonArray=new ObjectMapper().createArrayNode();
+
         ObjectNode mutaNode = new ObjectMapper().createObjectNode();
-//        ObjectNode funcNode = new ObjectMapper().createObjectNode();
-//        ObjectNode LeafNode = new ObjectMapper().createObjectNode();
 
-//        Map<String,String> normalm=map.get(count).get(1);
-//        Map<String,String> m=map.get(count).get(1);
-//        for (String name: m.keySet()){
-//            new ObjectMapper().createObjectNode().put("name",name).put("origin",normalm.get(name)).put("mutation",m.get(name));
-//            //LeafNode.put("origin",normalm.get(name));
-//            //LeafNode.put("mutation",m.get(name));
-//            jsonArray.add(LeafNode);
-//        }
-//        funcNode.put("testNum:", Integer.parseInt(funLunar.get("tests")));
-//        funcNode.put("OK:",Integer.parseInt(funLunar.get("tests"))-Integer.parseInt(funLunar.get("failures")));
-//        funcNode.put("failures:",Integer.parseInt(funLunar.get("failures")));
-//        funcNode.set("difference",jsonArray);
-        mutaNode.set("third_party.lunarUtilTest",toJson(count,f,1));
-
-//        normalm=map.get(count).get(2);
-//        m=map.get(count).get(2);
-//        for (String name: m.keySet()){
-//            LeafNode.put("name",name);
-//            LeafNode.put("origin",normalm.get(name));
-//            LeafNode.put("mutation",m.get(name));
-//            jsonArray.add(LeafNode);
-//        }
-//        funcNode.put("testNum:", Integer.parseInt(funNext.get("tests")));
-//        funcNode.put("OK:",Integer.parseInt(funNext.get("tests"))-Integer.parseInt(funLunar.get("failures")));
-//        funcNode.put("failures:",Integer.parseInt(funNext.get("failures")));
-//        funcNode.set("difference",jsonArray);
-        mutaNode.set("third_party.NextDateTest",toJson(count,f,2));
+        if (!map.get(count).containsKey(0)){
+            mutaNode.set("third_party.lunarUtilTest",toJson(count,f,1));
+            mutaNode.set("third_party.NextDateTest",toJson(count,f,2));
+        }else {
+            mutaNode.put("error",errmsg);
+        }
         resultNode.set(fileName,mutaNode);
 
         return resultNode;
@@ -223,11 +211,12 @@ public class BatchTester
         exeCommand("(cd " + forgin.getPath()+";mvn test)");
 //        exeCommand("(cd ../resources/hw1_unittest_source;mvn test)");
 
-        System.out.println("ok");
+        System.out.println("source ok");
         map.put(count,loadXmls(forgin));
-//        saveToJson(count, forgin);
+
         count++;
         traverseFile(file);
+        System.out.println("traverse ok");
         return resultNode;
     }
 }

@@ -33,8 +33,6 @@ public class DOM4JTest {
         Map<String,String> rMap= new TreeMap<>();
         Map<String,String> funmsg=new TreeMap<>();
 
-
-
         SAXReader reader = new SAXReader();
         try {
             // 通过reader对象的read方法加载xml文件,获取docuemnt对象。
@@ -82,19 +80,24 @@ public class DOM4JTest {
                         }
                     }
                 }
-                list.add(end);
-                list.add(message);
-                mMap.put(name,list);
+
                 if (flag==0){
+                    list.add(end);
+                    list.add(message);
+                    mMap.put(name,list);
                     rMap.put(name,message);
                 }
-                if (flag!=0){
-                    if (!end.equals(mapCmp.get(name).get(0))){
-                        rMap.put(name,message);
+                if (flag!=0) {
+
+                    if (!end.equals(mapCmp.get(name).get(0))) {
+                        rMap.put(name, message);
                     }
+
                 }
             }
         } catch (DocumentException e) {
+
+            map.put("compile error",funmsg);
             e.printStackTrace();
         }
         if (flag==0){
@@ -112,6 +115,4 @@ public class DOM4JTest {
         map.put("rMap", rMap);
         return map;
     }
-
-
 }

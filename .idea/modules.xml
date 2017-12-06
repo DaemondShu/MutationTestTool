@@ -6,7 +6,9 @@
       <module fileurl="file://$PROJECT_DIR$/MutationGenerator/MutationGenerator.iml" filepath="$PROJECT_DIR$/MutationGenerator/MutationGenerator.iml" />
       <module fileurl="file://$PROJECT_DIR$/MutationTestTool.iml" filepath="$PROJECT_DIR$/MutationTestTool.iml" />
       <module fileurl="file://$PROJECT_DIR$/ReportGenerator/ReportGenerator.iml" filepath="$PROJECT_DIR$/ReportGenerator/ReportGenerator.iml" />
+      <module fileurl="file://$PROJECT_DIR$/TestCaseGenerator/TestCaseGenerator.iml" filepath="$PROJECT_DIR$/TestCaseGenerator/TestCaseGenerator.iml" />
       <module fileurl="file://$PROJECT_DIR$/hw1_unittest_manual/hw1_unittest_manual.iml" filepath="$PROJECT_DIR$/hw1_unittest_manual/hw1_unittest_manual.iml" />
+      <module fileurl="file://$PROJECT_DIR$/hw1_unittest_parameterized/hw1_unittest_parameterized.iml" filepath="$PROJECT_DIR$/hw1_unittest_parameterized/hw1_unittest_parameterized.iml" />
     </modules>
   </component>
 </project>
