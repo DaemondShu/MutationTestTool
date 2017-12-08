@@ -83,7 +83,9 @@ public class BatchTester
         }
         System.out.println("ready");
         for (File f : flist) {
-
+            if (f.getName()=="testcase"){
+                continue;
+            }
             try
             {
                 if (f.getPath().equals(originPath)){
@@ -103,10 +105,7 @@ public class BatchTester
             {
                 e.printStackTrace();
             }
-
         }
-
-
         return 0;
     }
 
@@ -213,7 +212,7 @@ public class BatchTester
 
         System.out.println("source ok");
         map.put(count,loadXmls(forgin));
-
+        saveToJson(count,forgin);
         count++;
         traverseFile(file);
         System.out.println("traverse ok");

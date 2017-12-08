@@ -54,10 +54,14 @@ public class DOM4JTest {
             // 通过element对象的elementIterator方法获取迭代器
             Iterator it = testsuite.elementIterator();
             // 遍历迭代器，获取根节点中的信息
+            int count=0;
+            String prename="";
             while (it.hasNext()) {
                 String end="success";
                 String name = "";
                 String message = "";
+
+
                 List<String> list= new ArrayList<>();
 
                 Element testcase = (Element) it.next();
@@ -65,8 +69,16 @@ public class DOM4JTest {
                 for (Attribute attr : testcaseAttrs) {
                     if (attr.getName() == "name") {
                         name = attr.getValue();
-                    }
+                        if (prename.equals("")){
+                            prename=name;
+                        }
 
+                        if (!name.equals(prename)){
+                            count=0;
+                            prename=name;
+                        }
+                        count++;
+                    }
                 }
                 Iterator itt = testcase.elementIterator();
                 while (itt.hasNext()) {
@@ -75,7 +87,6 @@ public class DOM4JTest {
                     List<Attribute> testEndAttrs = testcaseEnd.attributes();
                     for (Attribute attr : testEndAttrs) {
                         if (attr.getName() == "message") {
-
                             message = attr.getValue();
                         }
                     }
@@ -84,13 +95,13 @@ public class DOM4JTest {
                 if (flag==0){
                     list.add(end);
                     list.add(message);
-                    mMap.put(name,list);
-                    rMap.put(name,message);
+                    mMap.put(name+count,list);
+                    rMap.put(name+count,message);
                 }
                 if (flag!=0) {
 
-                    if (!end.equals(mapCmp.get(name).get(0))) {
-                        rMap.put(name, message);
+                    if (!end.equals(mapCmp.get(name+count).get(0))) {
+                        rMap.put(name+count, message);
                     }
 
                 }

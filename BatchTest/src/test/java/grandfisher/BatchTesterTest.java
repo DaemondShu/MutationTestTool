@@ -10,6 +10,7 @@ import java.io.File;
 
 public class BatchTesterTest
 {
+    public static JsonNode resultNode=new ObjectMapper().createObjectNode();
 
     @Test
     public void runTest() throws Exception
@@ -17,14 +18,29 @@ public class BatchTesterTest
         JsonNode objectNode=new ObjectMapper().createObjectNode();
         // 在这里测试你的模块
 
-        String  mutationPath=".."+ File.separator+ "resources";
-        String  originPath=".."+ File.separator+ "resources"+File.separator+"hw1_unittest_source";
+        String mutationPath=".."+ File.separator+ "resources";
+        String originPath=".."+ File.separator+ "resources"+File.separator+"hw1_unittest_source";
+
         BatchTester batchTester= new BatchTester(mutationPath,originPath);
-        System.out.println("----------------------------------------------------------------------");
+        resultNode=batchTester.runTest();
+
+
         System.out.println(
                 new ObjectMapper().writerWithDefaultPrettyPrinter()
-                        .writeValueAsString(batchTester.runTest()));
+                        .writeValueAsString(resultNode));
+        System.out.println("----------------------------------------------------------------------");
+
+        String[][] csvMsg={{".."+ File.separator+ "BatchTest"+File.separator+"getLunarDateInfo.csv","getLunarDateInfo"},
+                {".."+ File.separator+ "BatchTest"+File.separator+"getDayNum.csv","getDayNum"},
+                {".."+ File.separator+ "BatchTest"+File.separator+"getNextDateInfo.csv","getNextDateInfo"},
+                {".."+ File.separator+ "BatchTest"+File.separator+"vaildDate","vaildDate"}};
+        CsvWriter csvWriter=new CsvWriter();
+        for (int i=0;i<4;i++) {
+            csvWriter.csvCreate(csvMsg[i][0],csvMsg[i][1]);
+        }
+        System.out.println("----------------------------------------------------------------------");
 
     }
+
 
 }
