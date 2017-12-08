@@ -173,7 +173,34 @@ public class CsvWriter {
         JsonNode tempNode;
         //JsonNode caseNode;
         String line = "";
-        /*
+
+
+        mutaNode = resultNode.get("hw1_unittest_source");
+        funNode = mutaNode.get(funName);
+        diffNode = (ArrayNode) (funNode.get("difference"));
+        Iterator<JsonNode> iterator = diffNode.iterator();
+        while (iterator.hasNext())
+        {
+            tempNode = iterator.next();
+            String tempName="\""+caseName+"Test"+count+"\"" ;
+            String NodeName=tempNode.get("name").toString();
+
+            System.out.println(tempName);
+            System.out.println(NodeName);
+            System.out.println(NodeName.equals(tempName));
+
+            if (tempNode.get("name").toString().equals("\""+caseName+"Test"+count+"\"")) {
+                line = tempNode.get("mutation").toString();
+                if(!line.equals("")){
+                    line = dealString(line);
+                } else {
+                    line=" ";
+                }
+                line = "hw1_unittest_source" + " result" + comma + line;
+                writeLine(bw, line);
+                break;
+            }
+        }
 
 
 
@@ -182,63 +209,33 @@ public class CsvWriter {
 
             String key = it.next();
             mutaNode=resultNode.get(key);
-
-
-
-
-        }*/
-
-            for (int i = 0; i <= 30; i++)
+            if (key.equals("hw1_unittest_source")||key.equals("testcase")){
+                continue;
+            }
+            if (mutaNode.has("error"))
             {
-                if (i != 0)
+                line = key + " result" + comma + "compile error";
+                writeLine(bw, line);
+            } else {
+                funNode = mutaNode.get(funName);
+                diffNode = (ArrayNode) (funNode.get("difference"));
+                iterator = diffNode.iterator();
+                while (iterator.hasNext())
                 {
-                    if (i==13) continue;
-                    mutaNode = resultNode.get("hw1_unittest_mutation" + i);
-                    if (mutaNode.has("error"))
-                    {
-                        line = "hw1_unittest_mutation" + i + " result" + comma + "compile error";
-                        writeLine(bw, line);
-                    } else {
-                        funNode = mutaNode.get(funName);
-                        diffNode = (ArrayNode) (funNode.get("difference"));
-                        Iterator<JsonNode> iterator = diffNode.iterator();
-                        while (iterator.hasNext())
-                        {
-                            tempNode = iterator.next();
+                    tempNode = iterator.next();
 
-                            if (tempNode.get("name").equals("\""+caseName+"Test"+count+"\""))
-                            {
-                                line = tempNode.get("mutation").toString();
-                                line = dealString(line);
-                                line = "hw1_unittest_mutation" + i + " result" + comma + line;
-                                writeLine(bw, line);
-                            }
-                        }
-                    }
-                } else {
-                    mutaNode = resultNode.get("hw1_unittest_source");
-                    funNode = mutaNode.get(funName);
-                    diffNode = (ArrayNode) (funNode.get("difference"));
-                    Iterator<JsonNode> iterator = diffNode.iterator();
-                    while (iterator.hasNext())
+                    if (tempNode.get("name").toString().equals("\""+caseName+"Test"+count+"\""))
                     {
-                        tempNode = iterator.next();
-                        String tempName="\""+caseName+"Test"+count+"\"" ;
-                        String NodeName=tempNode.get("name").toString();
-                        if (tempNode.get("name").toString().equals("\""+caseName+"Test"+count+"\"")) {
-                            line = tempNode.get("mutation").toString();
-                            if(!line.equals("")){
-                                line = dealString(line);
-                            } else {
-                                line=" ";
-                            }
-                            line = "hw1_unittest_source" + " result" + comma + line;
-                            writeLine(bw, line);
-                            break;
-                        }
+                        line = tempNode.get("mutation").toString();
+                        line = dealString(line);
+                        line = key+ " result" + comma + line;
+                        writeLine(bw, line);
+
                     }
                 }
             }
+
+        }
 
     }
 
@@ -253,14 +250,24 @@ public class CsvWriter {
     private  static String dealString(String line)
     {
         String[] s= line.split("but was:");
-        s[1].replace("<","");
-        s[1].replace(">","");
-        s[1].replace("\\","");
-        s[1].replace("[","");
-        s[1].replace("]","");
-        s[1].replace("\"","");
-        s[1].replace("\"","");
-        line=s[1];
+        if (s.length==2) {
+            s[1].replace("<", "");
+            s[1].replace(">", "");
+            s[1].replace("\\", "");
+            s[1].replace("[", "");
+            s[1].replace("]", "");
+            s[1].replace("\"", "");
+            line = s[1];
+        }else {
+            s[0].replace("<", "");
+            s[0].replace(">", "");
+            s[0].replace("\\", "");
+            s[0].replace("[", "");
+            s[0].replace("]", "");
+            s[0].replace("\"", "");
+            line = s[0];
+        }
+
         return line;
     }
 }
