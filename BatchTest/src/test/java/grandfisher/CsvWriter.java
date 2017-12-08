@@ -2,6 +2,7 @@ package grandfisher;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import org.junit.Test;
 
 
 import java.io.*;
@@ -214,8 +215,9 @@ public class CsvWriter {
             }
             if (mutaNode.has("error"))
             {
-                line = key + " result" + comma + "compile error";
-                writeLine(bw, line);
+                continue;
+//                line = key + " result" + comma + "compile error";
+//                writeLine(bw, line);
             } else {
                 funNode = mutaNode.get(funName);
                 diffNode = (ArrayNode) (funNode.get("difference"));
@@ -247,27 +249,38 @@ public class CsvWriter {
     }
 
 
+
+
     private  static String dealString(String line)
     {
-        String[] s= line.split("but was:");
-        if (s.length==2) {
-            s[1].replace("<", "");
-            s[1].replace(">", "");
-            s[1].replace("\\", "");
-            s[1].replace("[", "");
-            s[1].replace("]", "");
-            s[1].replace("\"", "");
-            line = s[1];
-        }else {
-            s[0].replace("<", "");
-            s[0].replace(">", "");
-            s[0].replace("\\", "");
-            s[0].replace("[", "");
-            s[0].replace("]", "");
-            s[0].replace("\"", "");
-            line = s[0];
-        }
+        String[] s = line.split("but was:");
+//        if (s.length == 2)
+//        {
+//            s[1].replace("<", "");
+//            s[1].replace(">", "");
+//            s[1].replace("\\", "");
+//            s[1].replace("[", "");
+//            s[1].replace("]", "");
+//            s[1].replace("\"", "");
+//            line = s[1];
+//        } else
+//        {
+//            s[0].replace("<", "");
+//            s[0].replace(">", "");
+//            s[0].replace("\\", "");
+//            s[0].replace("[", "");
+//            s[0].replace("]", "");
+//            s[0].replace("\"", "");
+//            line = s[0];
+//        }
+        line = (s.length == 2) ? s[1] : s[0];
+        return line.replaceAll("[<>\\]\\[\\\"\\\\]","");
+    }
 
-        return line;
+
+    @Test
+    public void temp()
+    {
+        System.out.println(dealString("expected: <[]> but was: <[\\\"己卯年\\\",\\\"正月大\\\",\\\"十四\\\",\\\"兔\\\"]>"));
     }
 }
