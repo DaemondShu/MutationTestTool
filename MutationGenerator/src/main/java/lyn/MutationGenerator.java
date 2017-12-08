@@ -49,6 +49,14 @@ public class MutationGenerator
         MutationMethod.put("||",new ArrayList<String>(){{add("&&");}});
         MutationMethod.put("&&",new ArrayList<String>(){{add("||");}});
     }
+
+    public static String frontCompWithZore(int sourceDate, int formatLength)
+    {
+
+        String newString = String.format("%0" + formatLength + "d", sourceDate);
+        return newString;
+    }
+
     /**
      *
      * @param sourcePath    原始项目位置
@@ -146,12 +154,12 @@ public class MutationGenerator
                                 {
                                     ++testNumber;
                                     //复制源文件
-                                    exeCommand("cp -r "+SourcePath+" "+MutationPath+testNumber);
+                                    exeCommand("cp -r "+SourcePath+" "+MutationPath+frontCompWithZore(testNumber,3));
                                     //修改
                                     LineNumberReader antherReader=new LineNumberReader(new FileReader(new File(file)));
                                     String lineStr=null;
                                     BufferedWriter writer=new BufferedWriter(new FileWriter
-                                        (new File(MutationPath+testNumber+testCodePath+fileName)));
+                                            (new File(MutationPath+frontCompWithZore(testNumber,3)+testCodePath+fileName)));
                                     while((lineStr=antherReader.readLine())!=null)
                                     {
                                         if(antherReader.getLineNumber()!=posLineNumber)
@@ -186,7 +194,7 @@ public class MutationGenerator
                 }
 
                 reader.close();
-               // writeJson(jsonFileName,mutationInfo);
+                // writeJson(jsonFileName,mutationInfo);
 
             }catch (Exception e)
             {
