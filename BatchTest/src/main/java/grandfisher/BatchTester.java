@@ -15,7 +15,7 @@ import java.util.*;
 
 public class BatchTester
 {
-    private static ObjectNode resultNode = new ObjectMapper().createObjectNode();
+    public static ObjectNode resultNode = new ObjectMapper().createObjectNode();
     private static Map<Integer,Map<Integer,Map<String,String>>> map=new TreeMap<>();
     private static int count=0;
     //
@@ -25,18 +25,25 @@ public class BatchTester
     private static String originPath;
     private static String errmsg="compile error";
 
+    private boolean isReTest;
+
     /**
      * @param mutationPath  变异体输出的位置
      */
-    public BatchTester(String mutationPath,String originPath) throws Exception
+    public BatchTester(String mutationPath,String originPath, boolean isReTest) throws Exception
     {
         this.mutationPath=mutationPath;
         this.originPath=originPath;
+        this.isReTest = isReTest;
     }
 
 
     public void exeCommand(String commandstr)
     {
+        if (!isReTest)
+        {
+            return;
+        }
         BufferedReader reader=null;
         try
         {
@@ -92,7 +99,7 @@ public class BatchTester
                     continue;
                 }
                 exeCommand("(cd " + f.getPath()+";mvn clean;mvn test)");
-                System.out.println(f.getPath());
+                //System.out.println(f.getPath());
                 map.put(count,loadXmls(f));
 
                 if (count!=0) {
@@ -216,6 +223,21 @@ public class BatchTester
         count++;
         traverseFile(file);
         System.out.println("traverse ok");
+
+//      输出CSV
+
+        String[][] csvMsg={{".."+ File.separator+ "BatchTest"+File.separator+"getLunarDateInfo.csv","getLunarDateInfo"},
+                {".."+ File.separator+ "BatchTest"+File.separator+"getDayNum.csv","getDayNum"},
+                {".."+ File.separator+ "BatchTest"+File.separator+"getNextDateInfo.csv","getNextDateInfo"},
+                {".."+ File.separator+ "BatchTest"+File.separator+"vaildDate.csv","vaildDate"}};
+        CsvWriter csvWriter=new CsvWriter();
+        for (int i=0;i<4;i++) {
+            csvWriter.csvCreate(csvMsg[i][0],csvMsg[i][1]);
+        }
+        System.out.println("----------------------------------------------------------------------");
+
+
+
         return resultNode;
     }
 }

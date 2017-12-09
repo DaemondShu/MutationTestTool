@@ -7,6 +7,8 @@ import org.junit.Test;
 
 import java.io.File;
 
+import static grandfisher.CsvWriter.dealString;
+
 
 public class BatchTesterTest
 {
@@ -21,7 +23,10 @@ public class BatchTesterTest
         String mutationPath=".."+ File.separator+ "resources";
         String originPath=".."+ File.separator+ "resources"+File.separator+"hw1_unittest_source";
 
-        BatchTester batchTester= new BatchTester(mutationPath,originPath);
+//        boolean isReTest = true;
+//
+
+        BatchTester batchTester= new BatchTester(mutationPath,originPath, false);
         resultNode=batchTester.runTest();
 
 
@@ -30,16 +35,13 @@ public class BatchTesterTest
                         .writeValueAsString(resultNode));
         System.out.println("----------------------------------------------------------------------");
 
-        String[][] csvMsg={{".."+ File.separator+ "BatchTest"+File.separator+"getLunarDateInfo.csv","getLunarDateInfo"},
-                {".."+ File.separator+ "BatchTest"+File.separator+"getDayNum.csv","getDayNum"},
-                {".."+ File.separator+ "BatchTest"+File.separator+"getNextDateInfo.csv","getNextDateInfo"},
-                {".."+ File.separator+ "BatchTest"+File.separator+"vaildDate.csv","vaildDate"}};
-        CsvWriter csvWriter=new CsvWriter();
-        for (int i=0;i<4;i++) {
-            csvWriter.csvCreate(csvMsg[i][0],csvMsg[i][1]);
-        }
-        System.out.println("----------------------------------------------------------------------");
+    }
 
+
+    @Test
+    public void temp()
+    {
+        System.out.println(dealString("expected: <[]> but was: <[\\\"己卯年\\\",\\\"正月大\\\",\\\"十四\\\",\\\"兔\\\"]>"));
     }
 
 

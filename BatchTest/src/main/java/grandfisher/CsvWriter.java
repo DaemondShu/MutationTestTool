@@ -2,7 +2,6 @@ package grandfisher;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import org.junit.Test;
 
 
 import java.io.*;
@@ -167,7 +166,7 @@ public class CsvWriter {
                 break;
         }
 
-        JsonNode resultNode = BatchTesterTest.resultNode;
+        JsonNode resultNode = BatchTester.resultNode;
         JsonNode mutaNode;
         JsonNode funNode;
         ArrayNode diffNode;
@@ -250,8 +249,7 @@ public class CsvWriter {
 
 
 
-
-    private  static String dealString(String line)
+    public  static String dealString(String line)
     {
         String[] s = line.split("but was:");
 //        if (s.length == 2)
@@ -278,9 +276,5 @@ public class CsvWriter {
     }
 
 
-    @Test
-    public void temp()
-    {
-        System.out.println(dealString("expected: <[]> but was: <[\\\"己卯年\\\",\\\"正月大\\\",\\\"十四\\\",\\\"兔\\\"]>"));
-    }
+
 }

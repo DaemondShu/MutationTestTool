@@ -19,7 +19,7 @@ public class Commander
     @Parameter(names= {"-n", "--MaxMethodNum"}, description = "单符号最大变异种数")
     public Integer MutationMethodNum = 2;
 
-    @Parameter(names= {"-i", "--inputSourcePath"}, description = "源代码路径")
+    @Parameter(names= {"-i", "--inputSourcePath"}, description = "源代码路径，同时包含测试数据")
     public String sourcePath = "resources/hw1_unittest_source";
 
     @Parameter(names= {"-o", "--outputMutationPath"}, description = "所有变异体输出路径,会调用rm指令清空resource以下含有mutation的目录,慎用")
