@@ -72,9 +72,9 @@ public class CsvWriter {
                 writeParaValue(bw);
                 writeParaHead(bw, funName, output);
                 writeResValue(bw,funName);
-                System.out.println("----------------------------------------------------------------------");
-                System.out.println(count);
-                System.out.println("----------------------------------------------------------------------");
+//                System.out.println("----------------------------------------------------------------------");
+//                System.out.println(count);
+//                System.out.println("----------------------------------------------------------------------");
             }
 
 
@@ -182,12 +182,12 @@ public class CsvWriter {
         while (iterator.hasNext())
         {
             tempNode = iterator.next();
-            String tempName="\""+caseName+"Test"+count+"\"" ;
+            String tempName="\""+caseName+"Test"+count+"\"";
             String NodeName=tempNode.get("name").toString();
 
-            System.out.println(tempName);
-            System.out.println(NodeName);
-            System.out.println(NodeName.equals(tempName));
+//            System.out.println(tempName);
+//            System.out.println(NodeName);
+//            System.out.println(NodeName.equals(tempName));
 
             if (tempNode.get("name").toString().equals("\""+caseName+"Test"+count+"\"")) {
                 line = tempNode.get("mutation").toString();
@@ -271,6 +271,7 @@ public class CsvWriter {
 //            s[0].replace("\"", "");
 //            line = s[0];
 //        }
+
         line = (s.length == 2) ? s[1] : s[0];
         return line.replaceAll("[<>\\]\\[\\\"\\\\]","");
     }

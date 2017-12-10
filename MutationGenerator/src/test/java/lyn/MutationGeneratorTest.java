@@ -16,9 +16,8 @@ public class MutationGeneratorTest
         ObjectNode config=new ObjectMapper().createObjectNode();
         config.put("MutationSize",6);
         config.put("MutationMethodNum",2);
-        MutationGenerator generator=new MutationGenerator("../resources/hw1_unittest_source","../resources/hw1_unittest_mutation",config);
+        MutationGenerator generator=new MutationGenerator("../resources/hw1_unittest_source","../resources/mutation",config);
         System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(generator.runMutation()));
-
     }
 
 
@@ -28,10 +27,8 @@ public class MutationGeneratorTest
         ObjectNode config=new ObjectMapper().createObjectNode();
         config.put("MutationSize",5);
         config.put("MutationMethodNum",2);
-        MutationGenerator generator=new MutationGenerator("../resources/hw1_unittest_source","../resources/hw1_unittest_mutation",config);
-
+        MutationGenerator generator=new MutationGenerator("../resources/hw1_unittest_source","../resources/mutation",config);
         generator.exeCommand("sleep 3");
-
     }
 
 }

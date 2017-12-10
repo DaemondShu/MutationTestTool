@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import grandfisher.BatchTester;
+import grandfisher.CSVReader;
 import lyn.MutationGenerator;
 
 import java.io.*;
@@ -48,7 +49,8 @@ public class Commander
 
     static private void BatchTest(Commander config) throws Exception
     {
-        BatchTester batchTester= new BatchTester(config.MutationPath, config.sourcePath);
+        CSVReader.testcaseFilePath = config.MutationPath+"testcase/";
+        BatchTester batchTester= new BatchTester(config.MutationPath, config.sourcePath,true);
         String testResult = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(batchTester.runTest());
         FileOutputStream tr = new FileOutputStream("TestResult.json");
         tr.write(testResult.getBytes());

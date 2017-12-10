@@ -17,11 +17,12 @@ import java.util.List;
  * Created by lyn on 17-12-4.
  */
 public class CSVReader {
-    String testcaseFilePath="../resources/testcase/";
+    public static String testcaseFilePath="../resources/testcase/";
     String funcName="";
     public CSVReader(String name)
     {
         funcName=name;
+        //testcaseFilePath = testCasePath;
     }
     public List<JsonNode> read(int ParamNum,int returnNum)
     {
@@ -34,7 +35,7 @@ public class CSVReader {
             line=br.readLine();
             while ((line = br.readLine()) != null)
             {
-                System.out.println(line);
+//                System.out.println(line);
                 //解析每个变量
                 String[] params=line.split(",");
                 //input参数
@@ -61,7 +62,8 @@ public class CSVReader {
         {
             try
             {
-                br.close();
+                if (br!= null)
+                    br.close();
             }catch (IOException e)
             {
                 e.printStackTrace();

@@ -226,10 +226,10 @@ public class BatchTester
 
 //      输出CSV
 
-        String[][] csvMsg={{".."+ File.separator+ "BatchTest"+File.separator+"getLunarDateInfo.csv","getLunarDateInfo"},
-                {".."+ File.separator+ "BatchTest"+File.separator+"getDayNum.csv","getDayNum"},
-                {".."+ File.separator+ "BatchTest"+File.separator+"getNextDateInfo.csv","getNextDateInfo"},
-                {".."+ File.separator+ "BatchTest"+File.separator+"vaildDate.csv","vaildDate"}};
+        String[][] csvMsg={{"getLunarDateInfo.csv","getLunarDateInfo"},
+                {"getDayNum.csv","getDayNum"},
+                {"getNextDateInfo.csv","getNextDateInfo"},
+                {"vaildDate.csv","vaildDate"}};
         CsvWriter csvWriter=new CsvWriter();
         for (int i=0;i<4;i++) {
             csvWriter.csvCreate(csvMsg[i][0],csvMsg[i][1]);

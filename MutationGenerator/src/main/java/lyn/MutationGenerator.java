@@ -201,7 +201,7 @@ public class MutationGenerator
                 e.printStackTrace();
             }
 
-            testNumber++;
+//            testNumber++;
         }
 
         return mutationInfo;

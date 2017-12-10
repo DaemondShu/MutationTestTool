@@ -29,7 +29,6 @@ public class BatchTesterTest
         BatchTester batchTester= new BatchTester(mutationPath,originPath, false);
         resultNode=batchTester.runTest();
 
-
         System.out.println(
                 new ObjectMapper().writerWithDefaultPrettyPrinter()
                         .writeValueAsString(resultNode));

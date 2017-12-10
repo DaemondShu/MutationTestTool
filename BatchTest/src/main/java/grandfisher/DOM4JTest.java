@@ -107,9 +107,9 @@ public class DOM4JTest {
                 }
             }
         } catch (DocumentException e) {
-
             map.put("compile error",funmsg);
-            e.printStackTrace();
+            System.out.println(e.getMessage());
+            //e.printStackTrace();
         }
         if (flag==0){
             mapCmp.putAll(mMap);
