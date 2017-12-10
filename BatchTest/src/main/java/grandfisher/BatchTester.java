@@ -90,7 +90,7 @@ public class BatchTester
         }
         System.out.println("ready");
         for (File f : flist) {
-            if (f.getName()=="testcase"){
+            if (f.getName().contains("testcase")){
                 continue;
             }
             try
@@ -175,9 +175,16 @@ public class BatchTester
         Map<String,String> m=map.get(count).get(num);
 
         ArrayNode jsonArray=new ObjectMapper().createArrayNode();
+
+     // {
         for (String name: m.keySet()){
-            jsonArray.add(new ObjectMapper().createObjectNode().put("name",name).put("origin",normalm.get(name)).put("mutation",m.get(name)));
+            if ((normalm.get(name)!=null && !normalm.get(name).isEmpty()) || (m.get(name)!=null && !m.get(name).isEmpty()))
+            //if (normalm.get(name)!=null && m.get(name)!=null && !normalm.get(name).isEmpty() && !m.get(name).isEmpty())
+                jsonArray.add(new ObjectMapper().createObjectNode().put("name",name).put("origin",normalm.get(name)).put("mutation",m.get(name)));
         }
+        //}
+
+
 
         funcNode.put("testNum", Integer.parseInt(fun.get("tests")));
         funcNode.put("OK",Integer.parseInt(fun.get("tests"))-Integer.parseInt(fun.get("failures")));
@@ -224,6 +231,7 @@ public class BatchTester
         traverseFile(file);
         System.out.println("traverse ok");
 
+//        resultNode.remove("testcase");
 //      输出CSV
 
         String[][] csvMsg={{"getLunarDateInfo.csv","getLunarDateInfo"},
