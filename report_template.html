@@ -72,22 +72,22 @@
 
                     </thead>
                     <tbody>
-                        <tr ng-repeat="result in testResults | orderBy: 'ID' ">
-                            <td>{{ result.ID}} </td>
-                            <td style="text-align: center" ng-repeat="className in classNames">
-                                {{result[className].testNum + "/" + result[className].OK + "/" + result[className].failures}}
+                    <tr ng-repeat="result in testResults | orderBy: 'ID' "   >
+                        <td>{{ result.ID}} </td>
+                        <td style="text-align: center" ng-repeat="className in classNames" ng-class="{'warning': result.isBad}" >
+                            {{result[className].testNum + "/" + result[className].OK + "/" + result[className].failures}}
 
-                                <span class="label label-warning" ng-show="result[className].difference.length == 0"> <span class="glyphicon glyphicon-warning-sign" aria-hidden="true"></span></span>
+                            <span class="label label-warning" ng-show="result[className].difference.length == 0"> <span class="glyphicon glyphicon-warning-sign" aria-hidden="true"></span></span>
 
-                            </td>
-                        </tr>
+                        </td>
+                    </tr>
 
-                        <tr ng-repeat="result in testErrorResults | orderBy: 'ID' ">
-                            <td>{{ result.ID}} </td>
-                            <td class="danger" style="text-align: center" colspan="2">
-                                Compile Error
-                            </td>
-                        </tr>
+                    <tr ng-repeat="result in testErrorResults | orderBy: 'ID' ">
+                        <td>{{ result.ID}} </td>
+                        <td class="danger" style="text-align: center" colspan="2">
+                            Compile Error
+                        </td>
+                    </tr>
                     </tbody>
                 </table>
             </div>
@@ -296,16 +296,14 @@
             }
 
             // TODO: 柱状图
+
             console.log(key);
-            if (isFirst) {
-                for (var className in tests[key]) {
-                    classNames.push(className);
-                    $scope.testCaseNumOrigin = $scope.testCaseNumOrigin + tests[key][className].testNum;
-                }
-                isFirst = false;
-            }
-            id = eval(getNum(key));
-            tests[key]["ID"] = id;
+
+//            id = eval(getNum(key));
+
+            idStr = getNum(key)
+            id = parseInt(idStr);
+
 
             for (var className in tests[key]) {
                 classResult = tests[key][className];
@@ -317,12 +315,34 @@
                         (case_mutaion[testCase].push(id));
                 }
             }
-            //case_mutataion 
+            //case_mutataion
 
-            if (tests[key].error == undefined)
+            if (tests[key].error == undefined) {
+                if (isFirst) {
+                    for (var className1 in tests[key]) {
+                        classNames.push(className1);
+                        $scope.testCaseNumOrigin = $scope.testCaseNumOrigin + tests[key][className1].testNum;
+                    }
+                    isFirst = false;
+                }
+                tests[key]["ID"] = id;
+
+
+                isBad = true;
+
+                for (var classNameNum in classNames)
+                {
+                    className2 = classNames[classNameNum];
+                    isBad = isBad && (tests[key][className2].difference.length == 0);
+                }
+                tests[key]["isBad"] = isBad;
+
                 $scope.testResults.push(tests[key]);
-            else
+            }
+            else {
+                tests[key]["ID"] = id;
                 $scope.testErrorResults.push(tests[key]);
+            }
         }
 
         // $scope.testCaseNumAfterDeletion = 0;
@@ -343,12 +363,12 @@
         $scope.classNames = classNames;
 
         drawSelection([$scope.testCaseNumOrigin, $scope.testCaseNumRmUseless, $scope.testCaseNumRmSimilar])
-            // console.log(case_mutaion);
+        // console.log(case_mutaion);
 
         initMutationGraph($scope.mutations);
     });
 
-    // å é¤.javaåç¼
+    // Ã¥ÂÂ Ã©ÂÂ¤.javaÃ¥ÂÂÃ§Â¼Â
     app.filter('getClass', function() {
         return function(text) {
             return text.substr(0, text.length - 5)
@@ -364,4 +384,6 @@
     });
 </script>
 
-</html
+
+
+</html>

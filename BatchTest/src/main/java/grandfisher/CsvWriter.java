@@ -41,7 +41,7 @@ public class CsvWriter {
 
         funOutput.put("getLunarDateInfo",new String[]{"LunarYear","LunarMonth","LunarDay","LunarZodiac"});
         funOutput.put("getDayNum",new String[]{"DayNum"});
-        funOutput.put("getNextDateInfo",new String[]{"ErrorCode","ErrorMsg"});
+        funOutput.put("getNextDateInfo",new String[]{"ErrorC ode","ErrorMsg"});
         funOutput.put("vaildDate",new String[]{"ErrorCode"});
     }
 

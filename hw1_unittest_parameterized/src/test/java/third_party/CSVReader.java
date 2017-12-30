@@ -44,7 +44,9 @@ public class CSVReader {
                 }
                 //期望的return结果
                 ArrayNode out=new ObjectMapper().createArrayNode();
-                for(int i=1;i<=returnNum && !params[i+ParamNum].equals("");i++)
+                for(int i=1;i<=returnNum
+                        && !params[i+ParamNum].equals("null")
+                        ;i++)
                 {
                     out.add(params[i+ParamNum]);
                 }

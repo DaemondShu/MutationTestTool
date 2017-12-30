@@ -1,0 +1,2082 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/flatly/bootstrap.min.css" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular-animate.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular-touch.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/2.5.0/ui-bootstrap-tpls.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/3.8.5/echarts.min.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-charts/0.2.7/angular-charts.min.js"></script> -->
+</head>
+
+<body ng-app="myApp" ng-controller="userCtrl">
+
+    <div class="container">
+
+        <div class="row">
+
+            <h3 style="cursor:pointer" ng-click="isCollapsed1 = !isCollapsed1">Mutations Info</h3>
+            <hr>
+            <div uib-collapse="isCollapsed1">
+                <div id="mutationsInfoGraph" style="width: auto; height:400px;"></div>
+
+
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Class</th>
+                            <th>Line Number</th>
+                            <th>Origin Code</th>
+                            <th>Mutation Code</th>
+                            <th colspan="3" style="text-align: center">Mutation Operation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="(mutationID, mutationInfo) in mutations">
+                            <td>{{ mutationID | getID}} </td>
+                            <td>{{ mutationInfo.className | getClass}} </td>
+                            <td>{{ mutationInfo.lineNumber }} </td>
+                            <td>{{ mutationInfo.origin}} </td>
+                            <td>{{ mutationInfo.mutation}} </td>
+                            <td style="text-align: right">{{ mutationInfo.ori_oper}}</td>
+                            <td style="text-align: center"><span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span></td>
+                            <td style="text-align: left">{{mutationInfo.mu_oper }} </td>
+
+                        </tr>
+
+                    </tbody>
+                </table>
+            </div>
+
+
+        </div>
+
+        <div class="row">
+            <h3 style="cursor:pointer" ng-click="isCollapsed = !isCollapsed">Mutations Test Result</h3>
+            <hr>
+            <div uib-collapse="isCollapsed">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th rowspan>ID</th>
+                            <th ng-repeat="className in classNames" style="text-align: center">
+                                {{className}} <br/> {{'(Total/Passed/failure)' }}
+                            </th>
+                        </tr>
+
+                    </thead>
+                    <tbody>
+                    <tr ng-repeat="result in testResults | orderBy: 'ID' "   >
+                        <td>{{ result.ID}} </td>
+                        <td style="text-align: center" ng-repeat="className in classNames" ng-class="{'warning': result.isBad}" >
+                            {{result[className].testNum + "/" + result[className].OK + "/" + result[className].failures}}
+
+                            <span class="label label-warning" ng-show="result[className].difference.length == 0"> <span class="glyphicon glyphicon-warning-sign" aria-hidden="true"></span></span>
+
+                        </td>
+                    </tr>
+
+                    <tr ng-repeat="result in testErrorResults | orderBy: 'ID' ">
+                        <td>{{ result.ID}} </td>
+                        <td class="danger" style="text-align: center" colspan="2">
+                            Compile Error
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
+        <div class="row">
+            <h3 style="cursor:pointer" ng-click="isCollapsed2 = !isCollapsed2">Test Case Selection</h3>
+            <hr>
+            <div uib-collapse="isCollapsed">
+
+                <div id="selection" style="width: auto;height:400px;"></div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="text-align: center">Mutation IDs</th>
+                            <th style="text-align: center">
+                                Effective Test Case Nums
+                            </th>
+                        </tr>
+
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="(mutations,testcases) in mutations2case">
+                            <td style="text-align: center"> {{mutations}} </td>
+                            <td style="text-align: center"> {{testcases.toString()}} </td>
+                        </tr>
+
+                    </tbody>
+                </table>
+
+
+            </div>
+        </div>
+
+    </div>
+
+</body>
+
+<script>
+    Object.size = function(obj) {
+        var size = 0,
+            key;
+        for (key in obj) {
+            if (obj.hasOwnProperty(key)) size++;
+        }
+        return size;
+    };
+
+    function getNum(text) {
+        var value = "";
+        for (var i = text.length - 1; i >= 0; i--) {
+            if (text[i] >= '0' && text[i] <= '9')
+                value = text[i] + value;
+            else break;
+        }
+        return value;
+
+        // var value = text.replace(/[^0-9]/ig, "");
+        // return value;
+    }
+
+
+    function initMutationGraph(rawData) {
+        data = {};
+        for (var key in rawData) {
+            info = rawData[key];
+            if (data[info.ori_oper] == undefined)
+                data[info.ori_oper] = 1;
+            else
+                data[info.ori_oper]++;
+        }
+        muData = [];
+        max = 1;
+        for (var name in data) {
+            muData.push({
+                name: name,
+                value: data[name]
+            })
+            if (data[name] > max)
+                max = data[name];
+        }
+
+
+        option = {
+            // backgroundColor: '#2c343c',
+
+            // title: {
+            //     text: 'Mutations Info Graph',
+            //     left: 'center',
+            //     top: 20,
+            //     textStyle: {
+            //         color: '#ccc'
+            //     }
+            // },
+
+
+            tooltip: {
+                trigger: 'item',
+                formatter: "{a} <br/>{b} : {c} ({d}%)"
+            },
+
+            visualMap: {
+                show: false,
+                min: 0,
+                max: max * 2,
+                inRange: {
+                    colorLightness: [0, 1]
+                }
+            },
+            series: [{
+                name: 'Ã¥ÂÂÃ¥Â¼ÂÃ¤Â¸ÂªÃ¦ÂÂ°',
+                type: 'pie',
+                radius: '75%',
+                center: ['50%', '50%'],
+                data: muData.sort(function(a, b) {
+                    return a.value - b.value;
+                }),
+                roseType: 'radius',
+                label: {
+                    normal: {
+                        textStyle: {
+                            color: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                },
+                labelLine: {
+                    normal: {
+                        lineStyle: {
+                            color: 'rgba(0, 0, 0, 0.3)'
+                        },
+                        smooth: 0.2,
+                        length: 10,
+                        length2: 20
+                    }
+                },
+                itemStyle: {
+                    normal: {
+                        color: '#eeeeee',
+                        shadowBlur: 200,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                },
+
+                animationType: 'scale',
+                animationEasing: 'elasticOut',
+                animationDelay: function(idx) {
+                    return Math.random() * 200;
+                }
+            }]
+        };
+
+        var MutationCharts = echarts.init(document.getElementById('mutationsInfoGraph'));
+        MutationCharts.setOption(option);
+    }
+
+    function drawSelection(sizeData) {
+        var myChart = echarts.init(document.getElementById('selection'));
+
+        // æå®å¾è¡¨çéç½®é¡¹åæ°æ®
+        var option = {
+            title: {
+                text: 'Sizes under different Selections'
+            },
+            tooltip: {},
+            legend: {
+                data: ['Size']
+            },
+            xAxis: {
+                data: ["Original Size", "Size After Removing Useless testcases", "Size After Removing Similar testcases"]
+            },
+            yAxis: {},
+            series: [{
+                name: 'Size',
+                type: 'bar',
+                data: sizeData
+            }]
+        };
+
+        // ä½¿ç¨åæå®çéç½®é¡¹åæ°æ®æ¾ç¤ºå¾è¡¨ã
+        myChart.setOption(option);
+    }
+
+    app = angular.module('myApp', ['ui.bootstrap', 'ngAnimate']);
+    app.controller('userCtrl', function($scope) {
+
+        //    $scope.mutations = {"mutation1":{"className":"LunarUtil.java","lineNumber":119,"origin":"if (monthIndex == leapMonth && monthTemp == leapMonth + 1) isLeapMonth = true;","mutation":"if (monthIndex == leapMonth || monthTemp == leapMonth + 1) isLeapMonth = true;","ori_oper":"&&","mu_oper":"||"},"mutation2":{"className":"LunarUtil.java","lineNumber":181,"origin":"if (leapMonth == 0)","mutation":"if (leapMonth <= 0)","ori_oper":"==","mu_oper":"<="},"mutation3":{"className":"LunarUtil.java","lineNumber":181,"origin":"if (leapMonth == 0)","mutation":"if (leapMonth >= 0)","ori_oper":"==","mu_oper":">="},"mutation5":{"className":"NextDate.java","lineNumber":148,"origin":"day += n;","mutation":"day -= n;","ori_oper":"+","mu_oper":"-"},"mutation6":{"className":"NextDate.java","lineNumber":194,"origin":"return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0);","mutation":"return ((year % 4 == 0 && year % 100 != 0) || year % 400 <= 0);","ori_oper":"==","mu_oper":"<="},"mutation7":{"className":"NextDate.java","lineNumber":194,"origin":"return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0);","mutation":"return ((year % 4 == 0 && year % 100 != 0) || year % 400 >= 0);","ori_oper":"==","mu_oper":">="}};
+        //    var tests = {"mutation1":{"third_party.lunarUtilTest":{"testNum":60,"OK":34,"failures":26,"difference":[{"name":"getLunarDateInfoBoundaryTest009","origin":"","mutation":"arrays first differed at element [1]; expected:<[]Ã¦Â­Â£Ã¦ÂÂÃ¥Â¤Â§> but was:<[Ã©ÂÂ°]Ã¦Â­Â£Ã¦ÂÂÃ¥Â¤Â§>"},{"name":"getLunarDateInfoBoundaryTest022","origin":"","mutation":"arrays first differed at element [1]; expected:<[]Ã¦Â­Â£Ã¦ÂÂÃ¥Â¤Â§> but was:<[Ã©ÂÂ°]Ã¦Â­Â£Ã¦ÂÂÃ¥Â¤Â§>"},{"name":"getLunarDateInfoBoundaryTest023","origin":"","mutation":"arrays first differed at element [1]; expected:<[]Ã¦Â­Â£Ã¦ÂÂÃ¥Â¤Â§> but was:<[Ã©ÂÂ°]Ã¦Â­Â£Ã¦ÂÂÃ¥Â¤Â§>"},{"name":"getLunarDateInfoBoundaryTest025","origin":"","mutation":"arrays first differed at element [1]; expected:<[]Ã¦Â­Â£Ã¦ÂÂÃ¥Â°Â> but was:<[Ã©ÂÂ°]Ã¦Â­Â£Ã¦ÂÂÃ¥Â°Â>"},{"name":"getLunarDateInfoBoundaryTest026","origin":"","mutation":"arrays first differed at element [1]; expected:<[]Ã¦Â­Â£Ã¦ÂÂÃ¥Â°Â> but was:<[Ã©ÂÂ°]Ã¦Â­Â£Ã¦ÂÂÃ¥Â°Â>"},{"name":"getLunarDateInfoTest008","origin":"","mutation":"arrays first differed at element [1]; expected:<[]Ã¦Â­Â£Ã¦ÂÂÃ¥Â¤Â§> but was:<[Ã©ÂÂ°]Ã¦Â­Â£Ã¦ÂÂÃ¥Â¤Â§>"}]},"third_party.NextDateTest":{"testNum":67,"OK":61,"failures":6,"difference":[]}},"mutation2":{"third_party.lunarUtilTest":{"testNum":60,"OK":40,"failures":20,"difference":[]},"third_party.NextDateTest":{"testNum":67,"OK":61,"failures":6,"difference":[]}},"mutation3":{"third_party.lunarUtilTest":{"testNum":60,"OK":58,"failures":2,"difference":[{"name":"getDayNumBoundaryTest002","origin":"","mutation":"12"},{"name":"getDayNumBoundaryTest003","origin":"","mutation":"12"},{"name":"getDayNumBoundaryTest004","origin":"","mutation":"12"},{"name":"getDayNumBoundaryTest008","origin":"","mutation":"12"},{"name":"getDayNumBoundaryTest010","origin":"","mutation":"12"},{"name":"getDayNumTest004","origin":"","mutation":"12"},{"name":"getDayNumTest005","origin":"","mutation":"12"},{"name":"getDayNumTest006","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest003","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest004","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest005","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest009","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest010","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest011","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest014","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest015","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest016","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest017","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest019","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest020","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest022","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest023","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest025","origin":"","mutation":"12"},{"name":"getLunarDateInfoBoundaryTest026","origin":"","mutation":"12"},{"name":"getLunarDateInfoTest008","origin":"","mutation":"12"},{"name":"getLunarDateInfoTest009","origin":"","mutation":"12"},{"name":"getLunarDateInfoTest013","origin":"","mutation":"12"},{"name":"getLunarDateInfoTest014","origin":"","mutation":"12"},{"name":"getLunarDateInfoTest015","origin":"","mutation":"12"}]},"third_party.NextDateTest":{"testNum":67,"OK":61,"failures":6,"difference":[]}},"mutation5":{"third_party.lunarUtilTest":{"testNum":60,"OK":40,"failures":20,"difference":[]},"third_party.NextDateTest":{"testNum":67,"OK":58,"failures":9,"difference":[{"name":"GetNextDateInfoTest018","origin":"","mutation":"expected:<[1, 2008, 1, 2, Ã¥Â·Â±Ã¤Â¸ÂÃ¥Â¹Â´, Ã¤ÂºÂÃ¦ÂÂÃ¥Â°Â, Ã¥ÂÂÃ¤ÂºÂ, Ã§ÂÂ]> but was:<[1, 2007, 12, -29, Ã¥Â·Â±Ã¤Â¸ÂÃ¥Â¹Â´, Ã¤ÂºÂÃ¦ÂÂÃ¥Â°Â, Ã¥ÂÂÃ¤ÂºÂ, Ã§ÂÂ]>"},{"name":"GetNextDateInfoTest019","origin":"","mutation":"expected:<[1, 2008, 5, 4, Ã¥Â·Â±Ã¤Â¸ÂÃ¥Â¹Â´, Ã¤ÂºÂÃ¦ÂÂÃ¥Â°Â, Ã¥ÂÂÃ¤ÂºÂ, Ã§ÂÂ]> but was:<[1, 2008, 5, 0, Ã¥Â·Â±Ã¤Â¸ÂÃ¥Â¹Â´, Ã¤ÂºÂÃ¦ÂÂÃ¥Â°Â, Ã¥ÂÂÃ¤ÂºÂ, Ã§ÂÂ]>"},{"name":"GetNextDateInfoTest020","origin":"","mutation":"expected:<[1, 2008, 4, 9, Ã¥Â·Â±Ã¤Â¸ÂÃ¥Â¹Â´, Ã¤ÂºÂÃ¦ÂÂÃ¥Â°Â, Ã¥ÂÂÃ¤ÂºÂ, Ã§ÂÂ]> but was:<[1, 2008, 3, -18, Ã¥Â·Â±Ã¤Â¸ÂÃ¥Â¹Â´, Ã¤ÂºÂÃ¦ÂÂÃ¥Â°Â, Ã¥ÂÂÃ¤ÂºÂ, Ã§ÂÂ]>"}]}},"mutation6":{"third_party.lunarUtilTest":{"testNum":60,"OK":40,"failures":20,"difference":[]},"third_party.NextDateTest":{"testNum":67,"OK":61,"failures":6,"difference":[]}},"mutation7":{"third_party.lunarUtilTest":{"testNum":60,"OK":40,"failures":20,"difference":[]},"third_party.NextDateTest":{"testNum":67,"OK":58,"failures":9,"difference":[{"name":"GetNextDateInfoTest006","origin":"","mutation":"expected:<[0, Ã¨Â¾ÂÃ¥ÂÂ¥Ã§ÂÂÃ¦ÂÂ¥Ã¦ÂÂÃ¤Â¸ÂÃ¥Â­ÂÃ¥ÂÂ¨]> but was:<[1, 1905, 3, 1, Ã¥Â·Â±Ã¤Â¸ÂÃ¥Â¹Â´, Ã¤ÂºÂÃ¦ÂÂÃ¥Â°Â, Ã¥ÂÂÃ¤ÂºÂ, Ã§ÂÂ]>"},{"name":"ValidDateBoundaryTest024","origin":"","mutation":"expected:<102> but was:<100>"},{"name":"validDateTest006","origin":"","mutation":"expected:<102> but was:<100>"}]}}};
+        //
+
+        $scope.mutations = {
+  "mutation1" : {
+    "className" : "LunarUtil.java",
+    "lineNumber" : 67,
+    "origin" : "int total=differentDaysByMillisecond(new Date(year-yearBase,month-1,day));",
+    "mutation" : "int total=differentDaysByMillisecond(new Date(year-yearBase,month+1,day));",
+    "ori_oper" : "-",
+    "mu_oper" : "+"
+  },
+  "mutation2" : {
+    "className" : "LunarUtil.java",
+    "lineNumber" : 95,
+    "origin" : "zhiIndex = (zhiIndex + 1) % 12;",
+    "mutation" : "zhiIndex = (zhiIndex - 1) % 12;",
+    "ori_oper" : "+",
+    "mu_oper" : "-"
+  },
+  "mutation3" : {
+    "className" : "LunarUtil.java",
+    "lineNumber" : 111,
+    "origin" : "monthTemp = monthTemp % 12 + 1;",
+    "mutation" : "monthTemp = monthTemp % 12 - 1;",
+    "ori_oper" : "+",
+    "mu_oper" : "-"
+  },
+  "mutation4" : {
+    "className" : "LunarUtil.java",
+    "lineNumber" : 119,
+    "origin" : "if (monthIndex == leapMonth && monthTemp == leapMonth + 1) isLeapMonth = true;",
+    "mutation" : "if (monthIndex < leapMonth && monthTemp == leapMonth + 1) isLeapMonth = true;",
+    "ori_oper" : "==",
+    "mu_oper" : "<"
+  },
+  "mutation5" : {
+    "className" : "LunarUtil.java",
+    "lineNumber" : 119,
+    "origin" : "if (monthIndex == leapMonth && monthTemp == leapMonth + 1) isLeapMonth = true;",
+    "mutation" : "if (monthIndex > leapMonth && monthTemp == leapMonth + 1) isLeapMonth = true;",
+    "ori_oper" : "==",
+    "mu_oper" : ">"
+  },
+  "mutation6" : {
+    "className" : "LunarUtil.java",
+    "lineNumber" : 125,
+    "origin" : "System.out.println(\"total:\"+total+\";ä½æ°ï¼\"+remainder+\";åï¼\"+quotient);",
+    "mutation" : "System.out.println(\"total:\"+total+\";ä½æ°ï¼\"-remainder+\";åï¼\"+quotient);",
+    "ori_oper" : "+",
+    "mu_oper" : "-"
+  },
+  "mutation7" : {
+    "className" : "LunarUtil.java",
+    "lineNumber" : 128,
+    "origin" : "strDay = dayPre[0] + dayLater[remainder];",
+    "mutation" : "strDay = dayPre[0] - dayLater[remainder];",
+    "ori_oper" : "+",
+    "mu_oper" : "-"
+  },
+  "mutation8" : {
+    "className" : "LunarUtil.java",
+    "lineNumber" : 141,
+    "origin" : "gan[ganIndex] + zhi[zhiIndex] + strYear,",
+    "mutation" : "gan[ganIndex] + zhi[zhiIndex] - strYear,",
+    "ori_oper" : "+",
+    "mu_oper" : "-"
+  },
+  "mutation9" : {
+    "className" : "LunarUtil.java",
+    "lineNumber" : 180,
+    "origin" : "int flag = (int) info >> 16;",
+    "mutation" : "int flag = (int) info << 16;",
+    "ori_oper" : ">>",
+    "mu_oper" : "<<"
+  },
+  "mutation10" : {
+    "className" : "LunarUtil.java",
+    "lineNumber" : 192,
+    "origin" : "if (leapMonth > 0 && (12 - i) > leapMonth)",
+    "mutation" : "if (leapMonth >= 0 && (12 - i) > leapMonth)",
+    "ori_oper" : ">",
+    "mu_oper" : ">="
+  },
+  "mutation11" : {
+    "className" : "LunarUtil.java",
+    "lineNumber" : 192,
+    "origin" : "if (leapMonth > 0 && (12 - i) > leapMonth)",
+    "mutation" : "if (leapMonth < 0 && (12 - i) > leapMonth)",
+    "ori_oper" : ">",
+    "mu_oper" : "<"
+  },
+  "mutation12" : {
+    "className" : "LunarUtil.java",
+    "lineNumber" : 197,
+    "origin" : "monthSize[12 - i - 1] = (int) info % 2;",
+    "mutation" : "monthSize[12 - i + 1] = (int) info % 2;",
+    "ori_oper" : "-",
+    "mu_oper" : "+"
+  },
+  "mutation13" : {
+    "className" : "NextDate.java",
+    "lineNumber" : 46,
+    "origin" : "ArrayList<String> result = new ArrayList<>();",
+    "mutation" : "ArrayList<String> result = new ArrayList<>=();",
+    "ori_oper" : ">",
+    "mu_oper" : ">="
+  },
+  "mutation14" : {
+    "className" : "NextDate.java",
+    "lineNumber" : 46,
+    "origin" : "ArrayList<String> result = new ArrayList<>();",
+    "mutation" : "ArrayList<String> result = new ArrayList<<();",
+    "ori_oper" : ">",
+    "mu_oper" : "<"
+  },
+  "mutation15" : {
+    "className" : "NextDate.java",
+    "lineNumber" : 61,
+    "origin" : "if (n <= 0) info = _getBackNDateInfo(yearNow, monthNow, dayNow, n);",
+    "mutation" : "if (n < 0) info = _getBackNDateInfo(yearNow, monthNow, dayNow, n);",
+    "ori_oper" : "<=",
+    "mu_oper" : "<"
+  },
+  "mutation16" : {
+    "className" : "NextDate.java",
+    "lineNumber" : 61,
+    "origin" : "if (n <= 0) info = _getBackNDateInfo(yearNow, monthNow, dayNow, n);",
+    "mutation" : "if (n >= 0) info = _getBackNDateInfo(yearNow, monthNow, dayNow, n);",
+    "ori_oper" : "<=",
+    "mu_oper" : ">="
+  },
+  "mutation17" : {
+    "className" : "NextDate.java",
+    "lineNumber" : 97,
+    "origin" : "if (monthNext > 12)",
+    "mutation" : "if (monthNext >= 12)",
+    "ori_oper" : ">",
+    "mu_oper" : ">="
+  },
+  "mutation18" : {
+    "className" : "NextDate.java",
+    "lineNumber" : 97,
+    "origin" : "if (monthNext > 12)",
+    "mutation" : "if (monthNext < 12)",
+    "ori_oper" : ">",
+    "mu_oper" : "<"
+  },
+  "mutation19" : {
+    "className" : "NextDate.java",
+    "lineNumber" : 147,
+    "origin" : "n--;",
+    "mutation" : "n++;",
+    "ori_oper" : "--",
+    "mu_oper" : "++"
+  },
+  "mutation20" : {
+    "className" : "NextDate.java",
+    "lineNumber" : 153,
+    "origin" : "month++;",
+    "mutation" : "month--;",
+    "ori_oper" : "++",
+    "mu_oper" : "--"
+  },
+  "mutation21" : {
+    "className" : "NextDate.java",
+    "lineNumber" : 170,
+    "origin" : "day += calendarMonth[isLeapYear(year) ? 1 : 0][(month + 10) % 12];",
+    "mutation" : "day -= calendarMonth[isLeapYear(year) ? 1 : 0][(month + 10) % 12];",
+    "ori_oper" : "+",
+    "mu_oper" : "-"
+  },
+  "mutation22" : {
+    "className" : "NextDate.java",
+    "lineNumber" : 180,
+    "origin" : "month--;",
+    "mutation" : "month++;",
+    "ori_oper" : "--",
+    "mu_oper" : "++"
+  },
+  "mutation23" : {
+    "className" : "NextDate.java",
+    "lineNumber" : 194,
+    "origin" : "return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0);",
+    "mutation" : "return ((year % 4 == 0 && year % 100 <= 0) || year % 400 == 0);",
+    "ori_oper" : "!=",
+    "mu_oper" : "<="
+  },
+  "mutation24" : {
+    "className" : "NextDate.java",
+    "lineNumber" : 194,
+    "origin" : "return ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0);",
+    "mutation" : "return ((year % 4 == 0 && year % 100 >= 0) || year % 400 == 0);",
+    "ori_oper" : "!=",
+    "mu_oper" : ">="
+  },
+  "mutation25" : {
+    "className" : "NextDate.java",
+    "lineNumber" : 203,
+    "origin" : "} else if (month > 12 || month < 1)",
+    "mutation" : "} else if (month >= 12 || month < 1)",
+    "ori_oper" : ">",
+    "mu_oper" : ">="
+  },
+  "mutation26" : {
+    "className" : "NextDate.java",
+    "lineNumber" : 203,
+    "origin" : "} else if (month > 12 || month < 1)",
+    "mutation" : "} else if (month < 12 || month < 1)",
+    "ori_oper" : ">",
+    "mu_oper" : "<"
+  },
+  "mutation27" : {
+    "className" : "NextDate.java",
+    "lineNumber" : 205,
+    "origin" : "System.out.println(year + \"-\" + month + \"-\" + day);",
+    "mutation" : "System.out.println(year + \"-\" + month - \"-\" + day);",
+    "ori_oper" : "+",
+    "mu_oper" : "-"
+  },
+  "mutation28" : {
+    "className" : "NextDate.java",
+    "lineNumber" : 210,
+    "origin" : "if (day < 1 || day > calendarMonth[isLeapYear][month - 1])",
+    "mutation" : "if (day < 1 || day > calendarMonth[isLeapYear][month + 1])",
+    "ori_oper" : "-",
+    "mu_oper" : "+"
+  },
+  "mutation29" : {
+    "className" : "NextDate.java",
+    "lineNumber" : 212,
+    "origin" : "System.out.println(year + \"-\" + month + \"-\" + day);",
+    "mutation" : "System.out.println(year + \"-\" + month + \"-\" - day);",
+    "ori_oper" : "+",
+    "mu_oper" : "-"
+  }
+};
+        tests = {
+  "hw1_unittest_source" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 40,
+      "failures" : 20,
+      "difference" : [ {
+        "name" : "GetDayNumTest12",
+        "origin" : "expected: <-1> but was: <384>",
+        "mutation" : "expected: <-1> but was: <384>"
+      }, {
+        "name" : "GetDayNumTest13",
+        "origin" : "expected: <-1> but was: <383>",
+        "mutation" : "expected: <-1> but was: <383>"
+      }, {
+        "name" : "GetDayNumTest14",
+        "origin" : "expected: <-1> but was: <384>",
+        "mutation" : "expected: <-1> but was: <384>"
+      }, {
+        "name" : "GetDayNumTest7",
+        "origin" : "expected: <-1> but was: <348>",
+        "mutation" : "expected: <-1> but was: <348>"
+      }, {
+        "name" : "GetLunarDateInfoTest10",
+        "origin" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"å·±å¯å¹´\",\"æ­£æå¤§\",\"åå\",\"å\"]>",
+        "mutation" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"å·±å¯å¹´\",\"æ­£æå¤§\",\"åå\",\"å\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest11",
+        "origin" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"ä¹äº¥å¹´\",\"å«æå¤§\",\"åä¸\",\"çª\"]>",
+        "mutation" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"ä¹äº¥å¹´\",\"å«æå¤§\",\"åä¸\",\"çª\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest17",
+        "origin" : "expected: <[\"åºå­å¹´\",\"ä¸æå°\",\"åäº\",\"é¼ \"]> but was: <[\"åºå­å¹´\",\"ä¸æå°\",\"åå\",\"é¼ \"]>",
+        "mutation" : "expected: <[\"åºå­å¹´\",\"ä¸æå°\",\"åäº\",\"é¼ \"]> but was: <[\"åºå­å¹´\",\"ä¸æå°\",\"åå\",\"é¼ \"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest22",
+        "origin" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"ç¸éå¹´\",\"åä¸æå¤§\",\"åäº\",\"é¸¡\"]>",
+        "mutation" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"ç¸éå¹´\",\"åä¸æå¤§\",\"åäº\",\"é¸¡\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest23",
+        "origin" : "expected: <[\"ç¸éå¹´\",\"èæå°\",\"åä¸\",\"é¸¡\"]> but was: <[\"ç¸éå¹´\",\"æ­£æå°\",\"åä¸\",\"é¸¡\"]>",
+        "mutation" : "expected: <[\"ç¸éå¹´\",\"èæå°\",\"åä¸\",\"é¸¡\"]> but was: <[\"ç¸éå¹´\",\"æ­£æå°\",\"åä¸\",\"é¸¡\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest27",
+        "origin" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"ç²æå¹´\",\"èæå¤§\",\"åå\",\"ç\"]>",
+        "mutation" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"ç²æå¹´\",\"èæå¤§\",\"åå\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest28",
+        "origin" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"ç²æå¹´\",\"äºæå¤§\",\"äºå\",\"ç\"]>",
+        "mutation" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"ç²æå¹´\",\"äºæå¤§\",\"äºå\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest3",
+        "origin" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"åºå­å¹´\",\"é°å«æå°\",\"å»¿å­\",\"é¼ \"]>",
+        "mutation" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"åºå­å¹´\",\"é°å«æå°\",\"å»¿å­\",\"é¼ \"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest33",
+        "origin" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"ç²æå¹´\",\"ä¸æå¤§\",\"å»¿ä¸\",\"ç\"]>",
+        "mutation" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"ç²æå¹´\",\"ä¸æå¤§\",\"å»¿ä¸\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest36",
+        "origin" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"ç²æå¹´\",\"èæå¤§\",\"åä¸\",\"ç\"]>",
+        "mutation" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"ç²æå¹´\",\"èæå¤§\",\"åä¸\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest39",
+        "origin" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"ç²æå¹´\",\"æ­£æå¤§\",\"äºå\",\"ç\"]>",
+        "mutation" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"ç²æå¹´\",\"æ­£æå¤§\",\"äºå\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest4",
+        "origin" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"è¾ä¸å¹´\",\"èæå°\",\"åä¸\",\"ç\"]>",
+        "mutation" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"è¾ä¸å¹´\",\"èæå°\",\"åä¸\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest42",
+        "origin" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"ä¸å­å¹´\",\"æ­£æå°\",\"åäº\",\"é¼ \"]>",
+        "mutation" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"ä¸å­å¹´\",\"æ­£æå°\",\"åäº\",\"é¼ \"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest5",
+        "origin" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"åºè¾°å¹´\",\"å­æå°\",\"å»¿ä¹\",\"é¾\"]>",
+        "mutation" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"åºè¾°å¹´\",\"å­æå°\",\"å»¿ä¹\",\"é¾\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest6",
+        "origin" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"åºè¾°å¹´\",\"äºæå¤§\",\"å»¿å«\",\"é¾\"]>",
+        "mutation" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"åºè¾°å¹´\",\"äºæå¤§\",\"å»¿å«\",\"é¾\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest7",
+        "origin" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"åºè¾°å¹´\",\"æ­£æå¤§\",\"å»¿å­\",\"é¾\"]>",
+        "mutation" : "expected: <[\"\",\"\",\"\",\"\"]> but was: <[\"åºè¾°å¹´\",\"æ­£æå¤§\",\"å»¿å­\",\"é¾\"]>"
+      } ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 62,
+      "failures" : 6,
+      "difference" : [ {
+        "name" : "GetNextDateInfoTest22",
+        "origin" : "expected: <[\"0\",\"nextdateçæ¥æè¶åºèå´\"]> but was: <[\"1\",\"-5877711\",\"6\",\"22\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>",
+        "mutation" : "expected: <[\"0\",\"nextdateçæ¥æè¶åºèå´\"]> but was: <[\"1\",\"-5877711\",\"6\",\"22\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest23",
+        "origin" : "expected: <[\"0\",\"nextdateçæ¥æè¶åºèå´\"]> but was: <[\"1\",\"1899\",\"12\",\"31\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>",
+        "mutation" : "expected: <[\"0\",\"nextdateçæ¥æè¶åºèå´\"]> but was: <[\"1\",\"1899\",\"12\",\"31\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest26",
+        "origin" : "expected: <[\"0\",\"nextdateçæ¥æè¶åºèå´\"]> but was: <[\"1\",\"5881510\",\"7\",\"12\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>",
+        "mutation" : "expected: <[\"0\",\"nextdateçæ¥æè¶åºèå´\"]> but was: <[\"1\",\"5881510\",\"7\",\"12\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest27",
+        "origin" : "expected: <[\"0\",\"nextdateçæ¥æè¶åºèå´\"]> but was: <[\"2\",\"-5877510\",\"6\",\"21\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>",
+        "mutation" : "expected: <[\"0\",\"nextdateçæ¥æè¶åºèå´\"]> but was: <[\"2\",\"-5877510\",\"6\",\"21\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest30",
+        "origin" : "expected: <[\"0\",\"nextdateçæ¥æè¶åºèå´\"]> but was: <[\"2\",\"2101\",\"1\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>",
+        "mutation" : "expected: <[\"0\",\"nextdateçæ¥æè¶åºèå´\"]> but was: <[\"2\",\"2101\",\"1\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest31",
+        "origin" : "expected: <[\"0\",\"nextdateçæ¥æè¶åºèå´\"]> but was: <[\"2\",\"2100\",\"12\",\"-2147483618\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>",
+        "mutation" : "expected: <[\"0\",\"nextdateçæ¥æè¶åºèå´\"]> but was: <[\"2\",\"2100\",\"12\",\"-2147483618\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      } ]
+    }
+  },
+  "mutation001" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 18,
+      "failures" : 42,
+      "difference" : [ {
+        "name" : "GetLunarDateInfoTest12",
+        "origin" : "",
+        "mutation" : "expected: <[\"å·±äº¥å¹´\",\"èæå¤§\",\"åä¹\",\"çª\"]> but was: <[\"åºå­å¹´\",\"äºæå¤§\",\"åä¹\",\"é¼ \"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest13",
+        "origin" : "",
+        "mutation" : "expected: <[\"åºå­å¹´\",\"é°å«æå°\",\"å»¿å­\",\"é¼ \"]> but was: <[\"åºå­å¹´\",\"åæå¤§\",\"å»¿å«\",\"é¼ \"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest14",
+        "origin" : "",
+        "mutation" : "expected: <[\"åºè¾°å¹´\",\"åæå°\",\"åä¸\",\"é¾\"]> but was: <[\"åºè¾°å¹´\",\"å­æå°\",\"åä¹\",\"é¾\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest15",
+        "origin" : "",
+        "mutation" : "expected: <[\"æè¾°å¹´\",\"ä¹æå°\",\"äºå\",\"é¾\"]> but was: <[\"æè¾°å¹´\",\"åä¸æå¤§\",\"å»¿äº\",\"é¾\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest18",
+        "origin" : "",
+        "mutation" : "expected: <[\"è¾ä¸å¹´\",\"äºæå¤§\",\"å»¿å­\",\"ç\"]> but was: <[\"è¾ä¸å¹´\",\"åæå°\",\"å»¿å«\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest19",
+        "origin" : "",
+        "mutation" : "expected: <[\"å·±æªå¹´\",\"é°äºæå°\",\"å»¿å\",\"ç¾\"]> but was: <[\"å·±æªå¹´\",\"åæå¤§\",\"å»¿å­\",\"ç¾\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest20",
+        "origin" : "",
+        "mutation" : "expected: <[\"åºç³å¹´\",\"ä¸æå°\",\"åäº\",\"ç´\"]> but was: <[\"åºç³å¹´\",\"äºæå°\",\"åä¸\",\"ç´\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest24",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"æ­£æå¤§\",\"åäº\",\"ç\"]> but was: <[\"ç²æå¹´\",\"ä¸æå¤§\",\"åå\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest25",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"åæå¤§\",\"åäº\",\"ç\"]> but was: <[\"ç²æå¹´\",\"èæå¤§\",\"åå\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest26",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"åä¸æå°\",\"åäº\",\"ç\"]> but was: <[\"ä¹äº¥å¹´\",\"æ­£æå°\",\"åäº\",\"çª\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest29",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"äºæå¤§\",\"å»¿ä¸\",\"ç\"]> but was: <[\"ç²æå¹´\",\"åæå°\",\"å»¿äº\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest30",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"äºæå¤§\",\"å»¿äº\",\"ç\"]> but was: <[\"ç²æå¹´\",\"åæå°\",\"å»¿ä¸\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest31",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"ä¸æå¤§\",\"åä¹\",\"ç\"]> but was: <[\"ç²æå¹´\",\"äºæå¤§\",\"å»¿ä¸\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest32",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"ä¸æå¤§\",\"äºå\",\"ç\"]> but was: <[\"ç²æå¹´\",\"äºæå¤§\",\"å»¿äº\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest34",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"åä¸æå°\",\"å»¿å«\",\"ç\"]> but was: <[\"ä¹äº¥å¹´\",\"äºæå¤§\",\"åäº\",\"çª\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest35",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"åä¸æå°\",\"å»¿ä¹\",\"ç\"]> but was: <[\"ä¹äº¥å¹´\",\"äºæå¤§\",\"åä¸\",\"çª\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest37",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"æ­£æå¤§\",\"åå«\",\"ç\"]> but was: <[\"ç²æå¹´\",\"ä¸æå¤§\",\"åä¸\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest38",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"æ­£æå¤§\",\"åä¹\",\"ç\"]> but was: <[\"ç²æå¹´\",\"ä¸æå¤§\",\"åå«\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest40",
+        "origin" : "",
+        "mutation" : "expected: <[\"ä¸å­å¹´\",\"æ­£æå°\",\"åå\",\"é¼ \"]> but was: <[\"ä¸å­å¹´\",\"ä¸æå°\",\"åä¸\",\"é¼ \"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest41",
+        "origin" : "",
+        "mutation" : "expected: <[\"ä¸å­å¹´\",\"æ­£æå°\",\"åä¸\",\"é¼ \"]> but was: <[\"ä¸å­å¹´\",\"ä¸æå°\",\"åäº\",\"é¼ \"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest8",
+        "origin" : "",
+        "mutation" : "expected: <[\"åºè¾°å¹´\",\"æ­£æå¤§\",\"åå­\",\"é¾\"]> but was: <[\"åºè¾°å¹´\",\"ä¸æå°\",\"åå­\",\"é¾\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest9",
+        "origin" : "",
+        "mutation" : "expected: <[\"æå¯å¹´\",\"æ­£æå¤§\",\"å»¿äº\",\"è\"]> but was: <[\"å·±å¯å¹´\",\"äºæå°\",\"å»¿å\",\"å\"]>"
+      } ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 62,
+      "failures" : 6,
+      "difference" : [ ]
+    }
+  },
+  "mutation002" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 53,
+      "failures" : 7,
+      "difference" : [ {
+        "name" : "GetLunarDateInfoTest14",
+        "origin" : "",
+        "mutation" : "-4"
+      }, {
+        "name" : "GetLunarDateInfoTest15",
+        "origin" : "",
+        "mutation" : "-4"
+      }, {
+        "name" : "GetLunarDateInfoTest18",
+        "origin" : "",
+        "mutation" : "-1"
+      }, {
+        "name" : "GetLunarDateInfoTest19",
+        "origin" : "",
+        "mutation" : "-7"
+      }, {
+        "name" : "GetLunarDateInfoTest20",
+        "origin" : "",
+        "mutation" : "-8"
+      }, {
+        "name" : "GetLunarDateInfoTest24",
+        "origin" : "",
+        "mutation" : "-10"
+      }, {
+        "name" : "GetLunarDateInfoTest25",
+        "origin" : "",
+        "mutation" : "-10"
+      }, {
+        "name" : "GetLunarDateInfoTest26",
+        "origin" : "",
+        "mutation" : "-10"
+      }, {
+        "name" : "GetLunarDateInfoTest29",
+        "origin" : "",
+        "mutation" : "-10"
+      }, {
+        "name" : "GetLunarDateInfoTest30",
+        "origin" : "",
+        "mutation" : "-10"
+      }, {
+        "name" : "GetLunarDateInfoTest31",
+        "origin" : "",
+        "mutation" : "-10"
+      }, {
+        "name" : "GetLunarDateInfoTest32",
+        "origin" : "",
+        "mutation" : "-10"
+      }, {
+        "name" : "GetLunarDateInfoTest34",
+        "origin" : "",
+        "mutation" : "-10"
+      }, {
+        "name" : "GetLunarDateInfoTest35",
+        "origin" : "",
+        "mutation" : "-10"
+      }, {
+        "name" : "GetLunarDateInfoTest37",
+        "origin" : "",
+        "mutation" : "-10"
+      }, {
+        "name" : "GetLunarDateInfoTest38",
+        "origin" : "",
+        "mutation" : "-10"
+      }, {
+        "name" : "GetLunarDateInfoTest8",
+        "origin" : "",
+        "mutation" : "-4"
+      }, {
+        "name" : "GetLunarDateInfoTest9",
+        "origin" : "",
+        "mutation" : "-2"
+      } ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 62,
+      "failures" : 6,
+      "difference" : [ ]
+    }
+  },
+  "mutation003" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 52,
+      "failures" : 8,
+      "difference" : [ {
+        "name" : "GetLunarDateInfoTest13",
+        "origin" : "",
+        "mutation" : "-1"
+      }, {
+        "name" : "GetLunarDateInfoTest14",
+        "origin" : "",
+        "mutation" : "-1"
+      }, {
+        "name" : "GetLunarDateInfoTest15",
+        "origin" : "",
+        "mutation" : "-1"
+      }, {
+        "name" : "GetLunarDateInfoTest18",
+        "origin" : "",
+        "mutation" : "-1"
+      }, {
+        "name" : "GetLunarDateInfoTest19",
+        "origin" : "",
+        "mutation" : "-1"
+      }, {
+        "name" : "GetLunarDateInfoTest20",
+        "origin" : "",
+        "mutation" : "-1"
+      }, {
+        "name" : "GetLunarDateInfoTest25",
+        "origin" : "",
+        "mutation" : "-1"
+      }, {
+        "name" : "GetLunarDateInfoTest26",
+        "origin" : "",
+        "mutation" : "-1"
+      }, {
+        "name" : "GetLunarDateInfoTest29",
+        "origin" : "",
+        "mutation" : "-1"
+      }, {
+        "name" : "GetLunarDateInfoTest30",
+        "origin" : "",
+        "mutation" : "-1"
+      }, {
+        "name" : "GetLunarDateInfoTest31",
+        "origin" : "",
+        "mutation" : "-1"
+      }, {
+        "name" : "GetLunarDateInfoTest32",
+        "origin" : "",
+        "mutation" : "-1"
+      }, {
+        "name" : "GetLunarDateInfoTest34",
+        "origin" : "",
+        "mutation" : "-1"
+      }, {
+        "name" : "GetLunarDateInfoTest35",
+        "origin" : "",
+        "mutation" : "-1"
+      }, {
+        "name" : "GetLunarDateInfoTest9",
+        "origin" : "",
+        "mutation" : "-1"
+      } ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 62,
+      "failures" : 6,
+      "difference" : [ ]
+    }
+  },
+  "mutation004" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 38,
+      "failures" : 22,
+      "difference" : [ {
+        "name" : "GetLunarDateInfoTest13",
+        "origin" : "",
+        "mutation" : "expected: <[\"åºå­å¹´\",\"é°å«æå°\",\"å»¿å­\",\"é¼ \"]> but was: <[\"åºå­å¹´\",\"å«æå°\",\"å»¿å­\",\"é¼ \"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest19",
+        "origin" : "",
+        "mutation" : "expected: <[\"å·±æªå¹´\",\"é°äºæå°\",\"å»¿å\",\"ç¾\"]> but was: <[\"å·±æªå¹´\",\"äºæå°\",\"å»¿å\",\"ç¾\"]>"
+      } ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 62,
+      "failures" : 6,
+      "difference" : [ ]
+    }
+  },
+  "mutation005" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 32,
+      "failures" : 28,
+      "difference" : [ {
+        "name" : "GetLunarDateInfoTest13",
+        "origin" : "",
+        "mutation" : "expected: <[\"åºå­å¹´\",\"é°å«æå°\",\"å»¿å­\",\"é¼ \"]> but was: <[\"åºå­å¹´\",\"å«æå°\",\"å»¿å­\",\"é¼ \"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest19",
+        "origin" : "",
+        "mutation" : "expected: <[\"å·±æªå¹´\",\"é°äºæå°\",\"å»¿å\",\"ç¾\"]> but was: <[\"å·±æªå¹´\",\"äºæå°\",\"å»¿å\",\"ç¾\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest24",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"æ­£æå¤§\",\"åäº\",\"ç\"]> but was: <[\"ç²æå¹´\",\"é°æ­£æå¤§\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest37",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"æ­£æå¤§\",\"åå«\",\"ç\"]> but was: <[\"ç²æå¹´\",\"é°æ­£æå¤§\",\"åå«\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest38",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"æ­£æå¤§\",\"åä¹\",\"ç\"]> but was: <[\"ç²æå¹´\",\"é°æ­£æå¤§\",\"åä¹\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest40",
+        "origin" : "",
+        "mutation" : "expected: <[\"ä¸å­å¹´\",\"æ­£æå°\",\"åå\",\"é¼ \"]> but was: <[\"ä¸å­å¹´\",\"é°æ­£æå°\",\"åå\",\"é¼ \"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest41",
+        "origin" : "",
+        "mutation" : "expected: <[\"ä¸å­å¹´\",\"æ­£æå°\",\"åä¸\",\"é¼ \"]> but was: <[\"ä¸å­å¹´\",\"é°æ­£æå°\",\"åä¸\",\"é¼ \"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest8",
+        "origin" : "",
+        "mutation" : "expected: <[\"åºè¾°å¹´\",\"æ­£æå¤§\",\"åå­\",\"é¾\"]> but was: <[\"åºè¾°å¹´\",\"é°æ­£æå¤§\",\"åå­\",\"é¾\"]>"
+      } ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 62,
+      "failures" : 6,
+      "difference" : [ ]
+    }
+  },
+  "mutation006" : {
+    "error" : "compile error"
+  },
+  "mutation007" : {
+    "error" : "compile error"
+  },
+  "mutation008" : {
+    "error" : "compile error"
+  },
+  "mutation009" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 15,
+      "failures" : 45,
+      "difference" : [ {
+        "name" : "GetDayNumTest10",
+        "origin" : "",
+        "mutation" : "expected: <384> but was: <385>"
+      }, {
+        "name" : "GetDayNumTest15",
+        "origin" : "",
+        "mutation" : "expected: <384> but was: <385>"
+      }, {
+        "name" : "GetDayNumTest17",
+        "origin" : "",
+        "mutation" : "expected: <384> but was: <385>"
+      }, {
+        "name" : "GetDayNumTest4",
+        "origin" : "",
+        "mutation" : "expected: <383> but was: <384>"
+      }, {
+        "name" : "GetDayNumTest5",
+        "origin" : "",
+        "mutation" : "expected: <384> but was: <385>"
+      }, {
+        "name" : "GetDayNumTest9",
+        "origin" : "",
+        "mutation" : "expected: <384> but was: <385>"
+      }, {
+        "name" : "GetLunarDateInfoTest13",
+        "origin" : "",
+        "mutation" : "1272446976"
+      }, {
+        "name" : "GetLunarDateInfoTest14",
+        "origin" : "",
+        "mutation" : "expected: <[\"åºè¾°å¹´\",\"åæå°\",\"åä¸\",\"é¾\"]> but was: <[\"åºè¾°å¹´\",\"ä¸æå°\",\"åå\",\"é¾\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest15",
+        "origin" : "",
+        "mutation" : "expected: <[\"æè¾°å¹´\",\"ä¹æå°\",\"äºå\",\"é¾\"]> but was: <[\"æè¾°å¹´\",\"å«æå¤§\",\"å»¿å«\",\"é¾\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest18",
+        "origin" : "",
+        "mutation" : "expected: <[\"è¾ä¸å¹´\",\"äºæå¤§\",\"å»¿å­\",\"ç\"]> but was: <[\"è¾ä¸å¹´\",\"äºæå¤§\",\"å»¿äº\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest19",
+        "origin" : "",
+        "mutation" : "expected: <[\"å·±æªå¹´\",\"é°äºæå°\",\"å»¿å\",\"ç¾\"]> but was: <[\"å·±æªå¹´\",\"æ­£æå¤§\",\"ä¸å\",\"ç¾\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest20",
+        "origin" : "",
+        "mutation" : "expected: <[\"åºç³å¹´\",\"ä¸æå°\",\"åäº\",\"ç´\"]> but was: <[\"åºç³å¹´\",\"æ­£æå¤§\",\"åå\",\"ç´\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest24",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"æ­£æå¤§\",\"åäº\",\"ç\"]> but was: <[\"ç¸éå¹´\",\"æ­£æå°\",\"åå\",\"é¸¡\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest25",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"åæå¤§\",\"åäº\",\"ç\"]> but was: <[\"ç²æå¹´\",\"ä¹æå°\",\"åä¸\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest26",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"åä¸æå°\",\"åäº\",\"ç\"]> but was: <[\"ç²æå¹´\",\"åæå¤§\",\"åå«\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest29",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"äºæå¤§\",\"å»¿ä¸\",\"ç\"]> but was: <[\"ç²æå¹´\",\"æ­£æå¤§\",\"å»¿ä¸\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest30",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"äºæå¤§\",\"å»¿äº\",\"ç\"]> but was: <[\"ç²æå¹´\",\"æ­£æå¤§\",\"å»¿å«\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest31",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"ä¸æå¤§\",\"åä¹\",\"ç\"]> but was: <[\"ç²æå¹´\",\"äºæå¤§\",\"å»¿äº\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest32",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"ä¸æå¤§\",\"äºå\",\"ç\"]> but was: <[\"ç²æå¹´\",\"äºæå¤§\",\"å»¿å­\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest34",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"åä¸æå°\",\"å»¿å«\",\"ç\"]> but was: <[\"ç²æå¹´\",\"åä¸æå°\",\"åå\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest35",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"åä¸æå°\",\"å»¿ä¹\",\"ç\"]> but was: <[\"ç²æå¹´\",\"åä¸æå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest37",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"æ­£æå¤§\",\"åå«\",\"ç\"]> but was: <[\"ç¸éå¹´\",\"æ­£æå°\",\"å»¿ä¸\",\"é¸¡\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest38",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"æ­£æå¤§\",\"åä¹\",\"ç\"]> but was: <[\"ç¸éå¹´\",\"æ­£æå°\",\"å»¿å\",\"é¸¡\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest40",
+        "origin" : "",
+        "mutation" : "expected: <[\"ä¸å­å¹´\",\"æ­£æå°\",\"åå\",\"é¼ \"]> but was: <[\"ä¹äº¥å¹´\",\"æ­£æå°\",\"åäº\",\"çª\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest41",
+        "origin" : "",
+        "mutation" : "expected: <[\"ä¸å­å¹´\",\"æ­£æå°\",\"åä¸\",\"é¼ \"]> but was: <[\"ä¹äº¥å¹´\",\"æ­£æå°\",\"åå­\",\"çª\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest8",
+        "origin" : "",
+        "mutation" : "expected: <[\"åºè¾°å¹´\",\"æ­£æå¤§\",\"åå­\",\"é¾\"]> but was: <[\"å·±å¯å¹´\",\"èæå°\",\"åä¹\",\"å\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest9",
+        "origin" : "",
+        "mutation" : "expected: <[\"æå¯å¹´\",\"æ­£æå¤§\",\"å»¿äº\",\"è\"]> but was: <[\"æå¯å¹´\",\"åä¸æå°\",\"å»¿å«\",\"è\"]>"
+      } ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 62,
+      "failures" : 6,
+      "difference" : [ ]
+    }
+  },
+  "mutation010" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 55,
+      "failures" : 5,
+      "difference" : [ {
+        "name" : "GetDayNumTest1",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetDayNumTest16",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetDayNumTest18",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetDayNumTest2",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetDayNumTest3",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetDayNumTest8",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest14",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest15",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest18",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest19",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest20",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest24",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest25",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest26",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest29",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest30",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest31",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest32",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest34",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest35",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest37",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest38",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest40",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest41",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest8",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetLunarDateInfoTest9",
+        "origin" : "",
+        "mutation" : "12"
+      } ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 62,
+      "failures" : 6,
+      "difference" : [ ]
+    }
+  },
+  "mutation011" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 18,
+      "failures" : 42,
+      "difference" : [ {
+        "name" : "GetDayNumTest11",
+        "origin" : "",
+        "mutation" : "expected: <384> but was: <383>"
+      }, {
+        "name" : "GetDayNumTest6",
+        "origin" : "",
+        "mutation" : "expected: <385> but was: <384>"
+      }, {
+        "name" : "GetLunarDateInfoTest13",
+        "origin" : "",
+        "mutation" : "expected: <[\"åºå­å¹´\",\"é°å«æå°\",\"å»¿å­\",\"é¼ \"]> but was: <[\"åºå­å¹´\",\"é°å«æå¤§\",\"å»¿å­\",\"é¼ \"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest14",
+        "origin" : "",
+        "mutation" : "expected: <[\"åºè¾°å¹´\",\"åæå°\",\"åä¸\",\"é¾\"]> but was: <[\"åºè¾°å¹´\",\"åæå°\",\"åå«\",\"é¾\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest15",
+        "origin" : "",
+        "mutation" : "expected: <[\"æè¾°å¹´\",\"ä¹æå°\",\"äºå\",\"é¾\"]> but was: <[\"æè¾°å¹´\",\"åæå¤§\",\"åäº\",\"é¾\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest19",
+        "origin" : "",
+        "mutation" : "expected: <[\"å·±æªå¹´\",\"é°äºæå°\",\"å»¿å\",\"ç¾\"]> but was: <[\"å·±æªå¹´\",\"ä¸æå¤§\",\"åä¸\",\"ç¾\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest20",
+        "origin" : "",
+        "mutation" : "expected: <[\"åºç³å¹´\",\"ä¸æå°\",\"åäº\",\"ç´\"]> but was: <[\"åºç³å¹´\",\"ä¸æå°\",\"å»¿å\",\"ç´\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest24",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"æ­£æå¤§\",\"åäº\",\"ç\"]> but was: <[\"ç²æå¹´\",\"æ­£æå¤§\",\"åå­\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest25",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"åæå¤§\",\"åäº\",\"ç\"]> but was: <[\"ç²æå¹´\",\"åæå¤§\",\"å»¿ä¸\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest26",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"åä¸æå°\",\"åäº\",\"ç\"]> but was: <[\"ç²æå¹´\",\"åä¸æå°\",\"å»¿ä¸\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest29",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"äºæå¤§\",\"å»¿ä¸\",\"ç\"]> but was: <[\"ç²æå¹´\",\"ä¸æå¤§\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest30",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"äºæå¤§\",\"å»¿äº\",\"ç\"]> but was: <[\"ç²æå¹´\",\"ä¸æå¤§\",\"åä¸\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest31",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"ä¸æå¤§\",\"åä¹\",\"ç\"]> but was: <[\"ç²æå¹´\",\"ä¸æå¤§\",\"ä¸å\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest32",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"ä¸æå¤§\",\"äºå\",\"ç\"]> but was: <[\"ç²æå¹´\",\"åæå°\",\"åä¸\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest34",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"åä¸æå°\",\"å»¿å«\",\"ç\"]> but was: <[\"ç²æå¹´\",\"èæå¤§\",\"åå\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest35",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"åä¸æå°\",\"å»¿ä¹\",\"ç\"]> but was: <[\"ç²æå¹´\",\"èæå¤§\",\"åä¸\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest37",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"æ­£æå¤§\",\"åå«\",\"ç\"]> but was: <[\"ç²æå¹´\",\"æ­£æå¤§\",\"å»¿ä¹\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest38",
+        "origin" : "",
+        "mutation" : "expected: <[\"ç²æå¹´\",\"æ­£æå¤§\",\"åä¹\",\"ç\"]> but was: <[\"ç²æå¹´\",\"æ­£æå¤§\",\"ä¸å\",\"ç\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest40",
+        "origin" : "",
+        "mutation" : "expected: <[\"ä¸å­å¹´\",\"æ­£æå°\",\"åå\",\"é¼ \"]> but was: <[\"ä¸å­å¹´\",\"æ­£æå°\",\"å»¿ä¸\",\"é¼ \"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest41",
+        "origin" : "",
+        "mutation" : "expected: <[\"ä¸å­å¹´\",\"æ­£æå°\",\"åä¸\",\"é¼ \"]> but was: <[\"ä¸å­å¹´\",\"æ­£æå°\",\"å»¿äº\",\"é¼ \"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest8",
+        "origin" : "",
+        "mutation" : "expected: <[\"åºè¾°å¹´\",\"æ­£æå¤§\",\"åå­\",\"é¾\"]> but was: <[\"åºè¾°å¹´\",\"æ­£æå¤§\",\"å»¿ä¸\",\"é¾\"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest9",
+        "origin" : "",
+        "mutation" : "expected: <[\"æå¯å¹´\",\"æ­£æå¤§\",\"å»¿äº\",\"è\"]> but was: <[\"å·±å¯å¹´\",\"æ­£æå¤§\",\"åå­\",\"å\"]>"
+      } ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 62,
+      "failures" : 6,
+      "difference" : [ ]
+    }
+  },
+  "mutation012" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 48,
+      "failures" : 12,
+      "difference" : [ {
+        "name" : "GetDayNumTest1",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetDayNumTest10",
+        "origin" : "",
+        "mutation" : "expected: <384> but was: <383>"
+      }, {
+        "name" : "GetDayNumTest11",
+        "origin" : "",
+        "mutation" : "expected: <384> but was: <383>"
+      }, {
+        "name" : "GetDayNumTest15",
+        "origin" : "",
+        "mutation" : "expected: <384> but was: <383>"
+      }, {
+        "name" : "GetDayNumTest16",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetDayNumTest17",
+        "origin" : "",
+        "mutation" : "expected: <384> but was: <383>"
+      }, {
+        "name" : "GetDayNumTest18",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetDayNumTest2",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetDayNumTest3",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetDayNumTest4",
+        "origin" : "",
+        "mutation" : "expected: <383> but was: <382>"
+      }, {
+        "name" : "GetDayNumTest5",
+        "origin" : "",
+        "mutation" : "expected: <384> but was: <383>"
+      }, {
+        "name" : "GetDayNumTest6",
+        "origin" : "",
+        "mutation" : "expected: <385> but was: <383>"
+      }, {
+        "name" : "GetDayNumTest8",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetDayNumTest9",
+        "origin" : "",
+        "mutation" : "expected: <384> but was: <383>"
+      }, {
+        "name" : "GetLunarDateInfoTest13",
+        "origin" : "",
+        "mutation" : "expected: <[\"åºå­å¹´\",\"é°å«æå°\",\"å»¿å­\",\"é¼ \"]> but was: <[\"åºå­å¹´\",\"é°å«æå¤§\",\"å»¿å«\",\"é¼ \"]>"
+      }, {
+        "name" : "GetLunarDateInfoTest14",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetLunarDateInfoTest15",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetLunarDateInfoTest17",
+        "origin" : "expected: <[\"åºå­å¹´\",\"ä¸æå°\",\"åäº\",\"é¼ \"]> but was: <[\"åºå­å¹´\",\"ä¸æå°\",\"åå\",\"é¼ \"]>",
+        "mutation" : ""
+      }, {
+        "name" : "GetLunarDateInfoTest18",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetLunarDateInfoTest19",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetLunarDateInfoTest20",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetLunarDateInfoTest24",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetLunarDateInfoTest25",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetLunarDateInfoTest26",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetLunarDateInfoTest29",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetLunarDateInfoTest30",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetLunarDateInfoTest31",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetLunarDateInfoTest32",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetLunarDateInfoTest34",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetLunarDateInfoTest35",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetLunarDateInfoTest37",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetLunarDateInfoTest38",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetLunarDateInfoTest40",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetLunarDateInfoTest41",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetLunarDateInfoTest8",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetLunarDateInfoTest9",
+        "origin" : "",
+        "mutation" : "13"
+      } ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 62,
+      "failures" : 6,
+      "difference" : [ ]
+    }
+  },
+  "mutation013" : {
+    "error" : "compile error"
+  },
+  "mutation014" : {
+    "error" : "compile error"
+  },
+  "mutation015" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 40,
+      "failures" : 20,
+      "difference" : [ ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 62,
+      "failures" : 6,
+      "difference" : [ ]
+    }
+  },
+  "mutation016" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 40,
+      "failures" : 20,
+      "difference" : [ ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 58,
+      "failures" : 10,
+      "difference" : [ {
+        "name" : "GetNextDateInfoTest11",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2000\",\"12\",\"27\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"2001\",\"1\",\"-4\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest12",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2000\",\"7\",\"27\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"2000\",\"8\",\"-4\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest18",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2008\",\"1\",\"2\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"2008\",\"1\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest20",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2008\",\"4\",\"9\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"2008\",\"4\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      } ]
+    }
+  },
+  "mutation017" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 40,
+      "failures" : 20,
+      "difference" : [ ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 61,
+      "failures" : 7,
+      "difference" : [ {
+        "name" : "GetNextDateInfoTest21",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2008\",\"12\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"2009\",\"1\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      } ]
+    }
+  },
+  "mutation018" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 40,
+      "failures" : 20,
+      "difference" : [ ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 56,
+      "failures" : 12,
+      "difference" : [ {
+        "name" : "GetNextDateInfoTest10",
+        "origin" : "",
+        "mutation" : "expected: <[\"2\",\"2101\",\"1\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"2\",\"2100\",\"13\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest13",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2001\",\"1\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"2000\",\"13\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest14",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2001\",\"8\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"2002\",\"1\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest15",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2008\",\"1\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"2007\",\"13\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest17",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2008\",\"6\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"2009\",\"1\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest24",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"1900\",\"1\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"1899\",\"13\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      } ]
+    }
+  },
+  "mutation019" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 40,
+      "failures" : 20,
+      "difference" : [ ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 58,
+      "failures" : 10,
+      "difference" : [ {
+        "name" : "GetNextDateInfoTest18",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2008\",\"1\",\"2\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"2008\",\"1\",\"4\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest19",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2008\",\"5\",\"4\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"2008\",\"5\",\"6\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest20",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2008\",\"4\",\"9\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"2008\",\"4\",\"11\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest21",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2008\",\"12\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"2008\",\"12\",\"3\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      } ]
+    }
+  },
+  "mutation020" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 40,
+      "failures" : 20,
+      "difference" : [ ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 61,
+      "failures" : 7,
+      "difference" : [ {
+        "name" : "GetNextDateInfoTest18",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2008\",\"1\",\"2\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"2007\",\"11\",\"2\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest20",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2008\",\"4\",\"9\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"2008\",\"2\",\"9\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      } ]
+    }
+  },
+  "mutation021" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 40,
+      "failures" : 20,
+      "difference" : [ ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 60,
+      "failures" : 8,
+      "difference" : [ {
+        "name" : "GetNextDateInfoTest11",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2000\",\"12\",\"27\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"-5877610\",\"7\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest12",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2000\",\"7\",\"27\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"-5877610\",\"2\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      } ]
+    }
+  },
+  "mutation022" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 40,
+      "failures" : 20,
+      "difference" : [ ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 59,
+      "failures" : 9,
+      "difference" : [ {
+        "name" : "GetNextDateInfoTest13",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2001\",\"1\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"2001\",\"3\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest14",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2001\",\"8\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"2001\",\"10\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest24",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"1900\",\"1\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"1\",\"1900\",\"3\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      } ]
+    }
+  },
+  "mutation023" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 40,
+      "failures" : 20,
+      "difference" : [ ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 61,
+      "failures" : 7,
+      "difference" : [ {
+        "name" : "VaildDateTest36",
+        "origin" : "",
+        "mutation" : "expected: <100> but was: <102>"
+      } ]
+    }
+  },
+  "mutation024" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 40,
+      "failures" : 20,
+      "difference" : [ ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 62,
+      "failures" : 6,
+      "difference" : [ ]
+    }
+  },
+  "mutation025" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 40,
+      "failures" : 20,
+      "difference" : [ ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 54,
+      "failures" : 14,
+      "difference" : [ {
+        "name" : "GetNextDateInfoTest10",
+        "origin" : "",
+        "mutation" : "expected: <[\"2\",\"2101\",\"1\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"0\",\"è¾å¥çæ¥æä¸å­å¨\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest15",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2008\",\"1\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"0\",\"è¾å¥çæ¥æä¸å­å¨\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest18",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2008\",\"1\",\"2\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"0\",\"è¾å¥çæ¥æä¸å­å¨\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest28",
+        "origin" : "",
+        "mutation" : "expected: <[\"2\",\"2100\",\"12\",\"30\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"0\",\"è¾å¥çæ¥æä¸å­å¨\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest29",
+        "origin" : "",
+        "mutation" : "expected: <[\"2\",\"2100\",\"12\",\"31\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"0\",\"è¾å¥çæ¥æä¸å­å¨\"]>"
+      }, {
+        "name" : "VaildDateTest21",
+        "origin" : "",
+        "mutation" : "expected: <100> but was: <102>"
+      }, {
+        "name" : "VaildDateTest29",
+        "origin" : "",
+        "mutation" : "expected: <100> but was: <102>"
+      }, {
+        "name" : "VaildDateTest30",
+        "origin" : "",
+        "mutation" : "expected: <100> but was: <102>"
+      } ]
+    }
+  },
+  "mutation026" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 40,
+      "failures" : 20,
+      "difference" : [ ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 36,
+      "failures" : 32,
+      "difference" : [ {
+        "name" : "GetNextDateInfoTest11",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2000\",\"12\",\"27\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"0\",\"è¾å¥çæ¥æä¸å­å¨\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest12",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2000\",\"7\",\"27\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"0\",\"è¾å¥çæ¥æä¸å­å¨\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest13",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2001\",\"1\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"0\",\"è¾å¥çæ¥æä¸å­å¨\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest14",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2001\",\"8\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"0\",\"è¾å¥çæ¥æä¸å­å¨\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest16",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2008\",\"4\",\"6\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"0\",\"è¾å¥çæ¥æä¸å­å¨\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest17",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2008\",\"6\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"0\",\"è¾å¥çæ¥æä¸å­å¨\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest19",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2008\",\"5\",\"4\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"0\",\"è¾å¥çæ¥æä¸å­å¨\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest20",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2008\",\"4\",\"9\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"0\",\"è¾å¥çæ¥æä¸å­å¨\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest21",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"2008\",\"12\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"0\",\"è¾å¥çæ¥æä¸å­å¨\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest24",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"1900\",\"1\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"0\",\"è¾å¥çæ¥æä¸å­å¨\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest25",
+        "origin" : "",
+        "mutation" : "expected: <[\"1\",\"1900\",\"1\",\"2\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]> but was: <[\"0\",\"è¾å¥çæ¥æä¸å­å¨\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest4",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "VaildDateTest10",
+        "origin" : "",
+        "mutation" : "expected: <100> but was: <102>"
+      }, {
+        "name" : "VaildDateTest13",
+        "origin" : "",
+        "mutation" : "expected: <100> but was: <102>"
+      }, {
+        "name" : "VaildDateTest14",
+        "origin" : "",
+        "mutation" : "expected: <100> but was: <102>"
+      }, {
+        "name" : "VaildDateTest15",
+        "origin" : "",
+        "mutation" : "expected: <100> but was: <102>"
+      }, {
+        "name" : "VaildDateTest18",
+        "origin" : "",
+        "mutation" : "expected: <100> but was: <102>"
+      }, {
+        "name" : "VaildDateTest19",
+        "origin" : "",
+        "mutation" : "expected: <100> but was: <102>"
+      }, {
+        "name" : "VaildDateTest20",
+        "origin" : "",
+        "mutation" : "expected: <100> but was: <102>"
+      }, {
+        "name" : "VaildDateTest22",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "VaildDateTest24",
+        "origin" : "",
+        "mutation" : "expected: <100> but was: <102>"
+      }, {
+        "name" : "VaildDateTest25",
+        "origin" : "",
+        "mutation" : "expected: <100> but was: <102>"
+      }, {
+        "name" : "VaildDateTest26",
+        "origin" : "",
+        "mutation" : "expected: <100> but was: <102>"
+      }, {
+        "name" : "VaildDateTest27",
+        "origin" : "",
+        "mutation" : "expected: <100> but was: <102>"
+      }, {
+        "name" : "VaildDateTest32",
+        "origin" : "",
+        "mutation" : "expected: <100> but was: <102>"
+      }, {
+        "name" : "VaildDateTest33",
+        "origin" : "",
+        "mutation" : "expected: <100> but was: <102>"
+      }, {
+        "name" : "VaildDateTest35",
+        "origin" : "",
+        "mutation" : "expected: <100> but was: <102>"
+      }, {
+        "name" : "VaildDateTest36",
+        "origin" : "",
+        "mutation" : "expected: <100> but was: <102>"
+      }, {
+        "name" : "VaildDateTest4",
+        "origin" : "",
+        "mutation" : "12"
+      } ]
+    }
+  },
+  "mutation027" : {
+    "error" : "compile error"
+  },
+  "mutation028" : {
+    "third_party.lunarUtilTest" : {
+      "testNum" : 60,
+      "OK" : 40,
+      "failures" : 20,
+      "difference" : [ ]
+    },
+    "third_party.NextDateTest" : {
+      "testNum" : 68,
+      "OK" : 59,
+      "failures" : 9,
+      "difference" : [ {
+        "name" : "GetNextDateInfoTest10",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetNextDateInfoTest15",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetNextDateInfoTest18",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetNextDateInfoTest21",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "GetNextDateInfoTest28",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetNextDateInfoTest29",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "GetNextDateInfoTest6",
+        "origin" : "",
+        "mutation" : "expected: <[\"0\",\"è¾å¥çæ¥æä¸å­å¨\"]> but was: <[\"1\",\"1905\",\"3\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "GetNextDateInfoTest9",
+        "origin" : "",
+        "mutation" : "expected: <[\"0\",\"è¾å¥çæ¥æä¸å­å¨\"]> but was: <[\"1\",\"1904\",\"3\",\"1\",\"å·±ä¸å¹´\",\"äºæå°\",\"åäº\",\"ç\"]>"
+      }, {
+        "name" : "VaildDateTest20",
+        "origin" : "",
+        "mutation" : "12"
+      }, {
+        "name" : "VaildDateTest21",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "VaildDateTest29",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "VaildDateTest30",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "VaildDateTest31",
+        "origin" : "",
+        "mutation" : "13"
+      }, {
+        "name" : "VaildDateTest34",
+        "origin" : "",
+        "mutation" : "expected: <102> but was: <100>"
+      }, {
+        "name" : "VaildDateTest37",
+        "origin" : "",
+        "mutation" : "expected: <102> but was: <100>"
+      }, {
+        "name" : "VaildDateTest6",
+        "origin" : "",
+        "mutation" : "expected: <102> but was: <100>"
+      }, {
+        "name" : "VaildDateTest9",
+        "origin" : "",
+        "mutation" : "expected: <102> but was: <100>"
+      } ]
+    }
+  },
+  "mutation029" : {
+    "error" : "compile error"
+  }
+};
+
+        var classNames = new Array();
+        set = new Set();
+        $scope.testResults = new Array();
+        $scope.testErrorResults = new Array();
+        case_mutaion = {};
+
+        var isFirst = true;
+        $scope.testCaseNumOrigin = 0;
+
+        for (var key in tests) {
+            if (key.indexOf("source") >= 0) {
+                continue;
+            }
+
+            // TODO: æ±ç¶å¾
+
+            console.log(key);
+
+//            id = eval(getNum(key));
+
+            idStr = getNum(key)
+            id = parseInt(idStr);
+
+
+            for (var className in tests[key]) {
+                classResult = tests[key][className];
+                for (var diff in classResult.difference) {
+                    testCase = classResult.difference[diff].name;
+                    if (case_mutaion[testCase] == undefined)
+                        case_mutaion[testCase] = [id];
+                    else
+                        (case_mutaion[testCase].push(id));
+                }
+            }
+            //case_mutataion
+
+            if (tests[key].error == undefined) {
+                if (isFirst) {
+                    for (var className1 in tests[key]) {
+                        classNames.push(className1);
+                        $scope.testCaseNumOrigin = $scope.testCaseNumOrigin + tests[key][className1].testNum;
+                    }
+                    isFirst = false;
+                }
+                tests[key]["ID"] = id;
+
+
+                isBad = true;
+
+                for (var classNameNum in classNames)
+                {
+                    className2 = classNames[classNameNum];
+                    isBad = isBad && (tests[key][className2].difference.length == 0);
+                }
+                tests[key]["isBad"] = isBad;
+
+                $scope.testResults.push(tests[key]);
+            }
+            else {
+                tests[key]["ID"] = id;
+                $scope.testErrorResults.push(tests[key]);
+            }
+        }
+
+        // $scope.testCaseNumAfterDeletion = 0;
+        $scope.mutations2case = {};
+        $scope.testCaseNumRmUseless = 0;
+        for (var testcase in case_mutaion) {
+            // $scope.testCaseNumAfterDeletion++;
+            $scope.testCaseNumRmUseless++;
+            var mutations = case_mutaion[testcase].sort().toString();
+            if ($scope.mutations2case[mutations] == undefined)
+                $scope.mutations2case[mutations] = [getNum(testcase)]
+            else
+                $scope.mutations2case[mutations].push(getNum(testcase))
+        }
+
+        $scope.testCaseNumRmSimilar = Object.size($scope.mutations2case);
+
+        $scope.classNames = classNames;
+
+        drawSelection([$scope.testCaseNumOrigin, $scope.testCaseNumRmUseless, $scope.testCaseNumRmSimilar])
+        // console.log(case_mutaion);
+
+        initMutationGraph($scope.mutations);
+    });
+
+    // ÃÂ¥ÃÂÃÂ ÃÂ©ÃÂÃÂ¤.javaÃÂ¥ÃÂÃÂÃÂ§ÃÂ¼ÃÂ
+    app.filter('getClass', function() {
+        return function(text) {
+            return text.substr(0, text.length - 5)
+        }
+    });
+
+
+
+    app.filter('getID', function() {
+        return function(text) {
+            return getNum(text);
+        }
+    });
+</script>
+
+
+
+</html>
